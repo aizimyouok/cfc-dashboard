@@ -1,0 +1,21 @@
+{
+  "name": "CFC 사무실 임대 현황 대시보드",
+  "short_name": "CFC 임대 현황",
+  "description": "CFC 사무실 임대 현황 대시보드",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#f4f6f9",
+  "theme_color": "#2c3e50",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
