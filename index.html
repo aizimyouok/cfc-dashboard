@@ -1,101 +1,20 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2c3e50">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CFC 사무실 현황 대시보드</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50"/>
+
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
-        /* ─────────── 인증 화면 스타일 (새로 추가) ─────────── */
-#auth-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: var(--main-bg);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    display: none; /* JS로 제어 */
-}
-
-.auth-container {
-    background: var(--content-bg);
-    padding: 30px 40px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-md);
-    text-align: center;
-    width: 90%;
-    max-width: 350px;
-}
-.auth-container.shake {
-    animation: shake 0.5s;
-}
-
-.auth-container h3 {
-    margin-bottom: 10px;
-    font-size: 1.5rem;
-    color: var(--text-primary);
-}
-
-.auth-container p {
-    margin-bottom: 20px;
-    color: var(--text-secondary);
-}
-
-#pin-input {
-    width: 100%;
-    padding: 12px;
-    font-size: 1.2rem;
-    text-align: center;
-    border: 2px solid var(--border-color);
-    border-radius: 6px;
-    margin-bottom: 20px;
-    letter-spacing: 0.5em; /* 숫자가 떨어져 보이게 */
-}
-
-#auth-form button {
-    width: 100%;
-    padding: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    border: none;
-    border-radius: 6px;
-    background-color: var(--sidebar-accent);
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-#auth-form button:hover {
-    background-color: #2980b9;
-}
-
-#auth-error-msg {
-    color: var(--accent-red);
-    height: 20px;
-    font-weight: 600;
-    margin-top: 15px;
-    margin-bottom: 0;
-}
-
-@keyframes shake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(4px, 0, 0); }
-}
-        
         /* ─────────── 공통 변수 ─────────── */
         :root {
             --font-primary: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-
-            /* 색상 팔레트 */
             --sidebar-bg: #2c3e50;
             --sidebar-header-bg: #34495e;
             --sidebar-text: #ecf0f1;
@@ -106,16 +25,15 @@
             --text-secondary: #6c757d;
             --border-color: #e9ecef;
             --accent-green: #28a745;
-            --accent-yellow: #ffc107; /* 경고색 (예: 6개월 이내 만료) */
-            --accent-red: #e74c3c;   /* 위험색 (예: 2개월 이내 만료) */
+            --accent-yellow: #ffc107;
+            --accent-red: #e74c3c;
             --accent-blue: #007bff;
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
             --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
             --border-radius: 8px;
-            /* 임박 배경색 */
-            --danger-bg: #ffcdd2;   /* 2개월 이내 테이블 행 배경 */
-            --warning-bg: #ffe0b2;  /* 6개월 이내 테이블 행 배경 (현재는 --safe-bg 사용 중, 필요시 교체) */
-            --safe-bg: #e8f5e8;     /* 6개월 초과 또는 안전 상태 배경 */
+            --danger-bg: #ffcdd2;
+            --warning-bg: #ffe0b2;
+            --safe-bg: #e8f5e8;
         }
 
         * {
@@ -130,421 +48,84 @@
             overflow-x: hidden;
         }
 
+        /* 앱 컨테이너 수정된 부분 */
         .app-container {
-    display: none; /* 기본적으로 숨김 */
-    min-height: 100vh;
-}
-        
-.app-container.visible {
-    display: flex; /* 인증 후 이 클래스를 추가하여 보이게 함 */
-}
+            display: none; /* 기본적으로 숨김 */
+            min-height: 100vh;
+        }
+        .app-container.visible {
+            display: flex; /* 인증 후 이 클래스를 추가하여 보이게 함 */
+        }
 
         /* ─────────── 사이드바 ─────────── */
-        .sidebar {
-            width: 270px;
-            background: var(--sidebar-bg);
-            color: var(--sidebar-text);
-            box-shadow: var(--shadow-md);
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-            z-index: 1100;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-header {
-            padding: 25px 20px;
-            background: var(--sidebar-header-bg);
-            border-bottom: 1px solid #405060;
-        }
-
-        .sidebar-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .sidebar-subtitle {
-            font-size: 0.85rem;
-            color: #bdc3c7;
-            font-weight: 300;
-        }
-
-        .nav-menu {
-            padding: 15px 0;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            padding: 14px 20px;
-            color: var(--sidebar-text);
-            text-decoration: none;
-            transition: all 0.25s ease;
-            cursor: pointer;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-            font-size: 0.95rem;
-            font-weight: 600;
-            border-left: 4px solid transparent;
-        }
-
-        .nav-item:hover {
-            background: var(--sidebar-header-bg);
-            border-left-color: var(--sidebar-accent);
-            color: #fff;
-        }
-
-        .nav-item.active {
-            background: var(--sidebar-header-bg);
-            border-left-color: var(--sidebar-accent);
-            color: var(--sidebar-accent);
-            font-weight: 700;
-        }
-
-        .nav-item .icon {
-            margin-right: 15px;
-            font-size: 1rem;
-            width: 22px;
-            text-align: center;
-            color: #95a5a6;
-        }
-        .nav-item:hover .icon,
-        .nav-item.active .icon {
-            color: var(--sidebar-accent);
-        }
-
-        /* ─────────── 사이드바 하단: 계약 만료 임박 현황 카드 ─────────── */
-        .sidebar-alert-wrapper {
-            padding: 15px;
-            margin-top: auto; /* 푸시 투 바텀 */
-        }
-
-        .alert-card {
-            background: var(--sidebar-header-bg); /* 좀 더 부드러운 배경 */
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-md);
-            color: #fff;
-            overflow: hidden;
-        }
-
-        .alert-card-header {
-            background: #d32f2f; /* 위험 강조 */
-            padding: 10px 15px;
-            font-size: 1rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-        }
-        .alert-card-header i {
-            margin-right: 8px;
-            font-size: 1.1rem;
-        }
-
-        .alert-card-body {
-            padding: 12px 15px;
-            max-height: 350px; /* 필요시 스크롤 (기존 200px에서 350px로 수정) */
-            overflow-y: auto;
-        }
-
-        .alert-period {
-            background: rgba(255,255,255,0.1);
-            color: var(--sidebar-text);
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .alert-period i {
-            margin-right: 6px;
-        }
-
-        .alert-item {
-            color: var(--text-primary); /* 내부 텍스트는 밝은 배경에 맞게 */
-            padding: 7px 10px;
-            border-radius: 6px;
-            font-size: 0.85rem; /* 약간 작게 */
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            transition: background-color 0.2s ease;
-        }
+        .sidebar { width: 270px; background: var(--sidebar-bg); color: var(--sidebar-text); box-shadow: var(--shadow-md); position: fixed; height: 100vh; overflow-y: auto; z-index: 1100; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 25px 20px; background: var(--sidebar-header-bg); border-bottom: 1px solid #405060; }
+        .sidebar-title { font-size: 1.5rem; font-weight: 700; color: #fff; }
+        .sidebar-subtitle { font-size: 0.85rem; color: #bdc3c7; font-weight: 300; }
+        .nav-menu { padding: 15px 0; }
+        .nav-item { display: flex; align-items: center; padding: 14px 20px; color: var(--sidebar-text); text-decoration: none; transition: all 0.25s ease; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-size: 0.95rem; font-weight: 600; border-left: 4px solid transparent; }
+        .nav-item:hover { background: var(--sidebar-header-bg); border-left-color: var(--sidebar-accent); color: #fff; }
+        .nav-item.active { background: var(--sidebar-header-bg); border-left-color: var(--sidebar-accent); color: var(--sidebar-accent); font-weight: 700; }
+        .nav-item .icon { margin-right: 15px; font-size: 1rem; width: 22px; text-align: center; color: #95a5a6; }
+        .nav-item:hover .icon, .nav-item.active .icon { color: var(--sidebar-accent); }
+        .sidebar-alert-wrapper { padding: 15px; margin-top: auto; }
+        .alert-card { background: var(--sidebar-header-bg); border-radius: var(--border-radius); box-shadow: var(--shadow-md); color: #fff; overflow: hidden; }
+        .alert-card-header { background: #d32f2f; padding: 10px 15px; font-size: 1rem; font-weight: 700; display: flex; align-items: center; }
+        .alert-card-header i { margin-right: 8px; font-size: 1.1rem; }
+        .alert-card-body { padding: 12px 15px; max-height: 350px; overflow-y: auto; }
+        .alert-period { background: rgba(255,255,255,0.1); color: var(--sidebar-text); border-radius: 6px; padding: 6px 10px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; margin-bottom: 8px; }
+        .alert-period i { margin-right: 6px; }
+        .alert-item { color: var(--text-primary); padding: 7px 10px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; transition: background-color 0.2s ease; }
         .alert-item:last-child { margin-bottom: 0; }
-
-        .alert-item.critical { /* 2개월 이내 */
-            background: var(--danger-bg); /* 밝은 빨강 */
-            color: #7f1d1d; /* 어두운 빨강 텍스트 */
-            font-weight: bold;
-        }
-        .alert-item.warning { /* 6개월 이내 */
-            background: var(--warning-bg); /* 밝은 주황 */
-            color: #7c2d12; /* 어두운 주황 텍스트 */
-        }
-         .alert-item:hover {
-            filter: brightness(0.95);
-        }
-
+        .alert-item.critical { background: var(--danger-bg); color: #7f1d1d; font-weight: bold; }
+        .alert-item.warning { background: var(--warning-bg); color: #7c2d12; }
+        .alert-item:hover { filter: brightness(0.95); }
 
         /* ─────────── 메인 컨텐츠 ─────────── */
-        .main-content {
-            flex: 1;
-            margin-left: 270px;
-            display: flex;
-            flex-direction: column;
-            transition: margin-left 0.3s ease-in-out;
-        }
-        .overlay { /* 모바일 메뉴 활성 시 배경 */
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1090; /* 사이드바 바로 아래 */
-        }
+        .main-content { flex: 1; margin-left: 270px; display: flex; flex-direction: column; transition: margin-left 0.3s ease-in-out; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1090; }
         .overlay.active { display: block; }
-
-
-        .main-header {
-            background: var(--content-bg);
-            padding: 18px 30px;
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: var(--shadow-sm);
-            display: flex;
-            align-items: center;
-        }
-
-        .mobile-menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 1.6rem;
-            color: var(--text-primary);
-            cursor: pointer;
-            margin-right: 20px;
-            padding: 5px;
-        }
-
+        .main-header { background: var(--content-bg); padding: 18px 30px; border-bottom: 1px solid var(--border-color); box-shadow: var(--shadow-sm); display: flex; align-items: center; }
+        .mobile-menu-toggle { display: none; background: none; border: none; font-size: 1.6rem; color: var(--text-primary); cursor: pointer; margin-right: 20px; padding: 5px; }
         .main-title-container { flex-grow: 1; }
-        .main-title {
-            font-size: 1.7rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 2px;
-        }
-        .main-breadcrumb {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            font-weight: 400;
-        }
-
-        .content-area {
-            flex: 1;
-            padding: 30px;
-            background: var(--main-bg);
-        }
-
-        .notice {
-            padding: 18px 20px;
-            border-radius: var(--border-radius);
-            margin-bottom: 25px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            border: 1px solid transparent;
-        }
+        .main-title { font-size: 1.7rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+        .main-breadcrumb { color: var(--text-secondary); font-size: 0.9rem; font-weight: 400; }
+        .content-area { flex: 1; padding: 30px; background: var(--main-bg); }
+        .notice { padding: 18px 20px; border-radius: var(--border-radius); margin-bottom: 25px; font-size: 0.95rem; font-weight: 500; border: 1px solid transparent; }
         .notice-info { background: #e0f3f8; border-color: #bee5eb; color: #0c5460; }
         .notice-warning { background: #fff8e1; border-color: #ffeeba; color: #856404; }
         .notice-success { background: #e6f5e9; border-color: #c3e6cb; color: #155724; }
-
-        /* ─────────── 필터 컨테이너 ─────────── */
-        .filters-container {
-            margin-bottom: 20px;
-            background: var(--content-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-sm);
-            padding: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            align-items: flex-end; /* 버튼 높이 맞춤 */
-        }
-
-        .filters-container label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--text-primary);
-        }
-
-        .filters-container .setup-input, 
-        .filters-container .filter-button,
-        .column-toggle-btn { /* 공통 스타일 */
-            width: 100%; /* 버튼도 width 100% */
-            padding: 10px 14px;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
+        .filters-container { margin-bottom: 20px; background: var(--content-bg); border: 1px solid var(--border-color); border-radius: var(--border-radius); box-shadow: var(--shadow-sm); padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; align-items: flex-end; }
+        .filters-container label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; color: var(--text-primary); }
+        .filters-container .setup-input, .filters-container .filter-button, .column-toggle-btn { width: 100%; padding: 10px 14px; border: 1px solid #ced4da; border-radius: 6px; font-size: 1rem; transition: all 0.3s ease; }
         .filters-container .setup-input { background: #fafafa; }
-        .filters-container .setup-input:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-            background: #fff;
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
-        }
-
-        .filters-container .filter-button {
-            font-weight: 600;
-            cursor: pointer;
-            background: var(--accent-red);
-            color: #fff;
-            border: none; /* 중복 제거 */
-        }
-        .filters-container .filter-button:hover {
-            background: #c0392b;
-            transform: translateY(-1px);
-        }
-
-
-        /* ─────────── 데이터 테이블 ─────────── */
-        .data-table-container {
-            background: var(--content-bg);
-            border-radius: var(--border-radius);
-            padding: 0; /* 테이블 자체 패딩으로 대체 */
-            box-shadow: var(--shadow-md);
-            overflow-x: auto;
-            position: relative;
-            width: 100%;
-        }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 800px; 
-        }
-        .data-table th, .data-table td {
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.9rem;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            overflow: hidden;
-            max-width: 150px; 
-            text-align: center; /* 기본 중앙 정렬 */
-        }
-        .data-table th {
-            background-color: #f8f9fa;
-            font-weight: 700;
-            color: var(--text-primary);
-            position: sticky; /* 헤더 고정 */
-            top: 0;
-            z-index: 10;
-        }
-        .data-table td.remarks-cell { /* 비고 셀만 좌측 정렬 및 줄바꿈 */
-            text-align: left;
-            max-width: 200px;
-            white-space: normal; 
-            word-wrap: break-word;
-        }
-        .data-table tbody tr {
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
+        .filters-container .setup-input:focus { outline: none; border-color: var(--accent-blue); background: #fff; box-shadow: 0 0 0 2px rgba(0,123,255,0.2); }
+        .filters-container .filter-button { font-weight: 600; cursor: pointer; background: var(--accent-red); color: #fff; border: none; }
+        .filters-container .filter-button:hover { background: #c0392b; transform: translateY(-1px); }
+        .data-table-container { background: var(--content-bg); border-radius: var(--border-radius); padding: 0; box-shadow: var(--shadow-md); overflow-x: auto; position: relative; width: 100%; }
+        .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        .data-table th, .data-table td { padding: 14px 18px; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 150px; text-align: center; }
+        .data-table th { background-color: #f8f9fa; font-weight: 700; color: var(--text-primary); position: sticky; top: 0; z-index: 10; }
+        .data-table td.remarks-cell { text-align: left; max-width: 200px; white-space: normal; word-wrap: break-word; }
+        .data-table tbody tr { cursor: pointer; transition: all 0.15s ease; }
         .data-table tbody tr:nth-child(odd) { background-color: var(--content-bg); }
         .data-table tbody tr:nth-child(even) { background-color: #fdfdfd; }
-        .data-table tbody tr:hover {
-            background-color: #e9ecef !important; /* 호버 시 배경색 우선 적용 */
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        /* 만료 임박 행 강조는 JS에서 인라인 스타일로 직접 적용 중, 필요시 CSS 클래스로 전환 가능 */
-
-        .sortable-header {
-            cursor: pointer;
-            user-select: none;
-            position: relative;
-            padding-right: 25px !important; /* 아이콘 공간 확보 */
-        }
+        .data-table tbody tr:hover { background-color: #e9ecef !important; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .sortable-header { cursor: pointer; user-select: none; position: relative; padding-right: 25px !important; }
         .sortable-header:hover { background-color: #e9ecef; }
-        .sort-icon {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            opacity: 0.5;
-            font-size: 0.8rem;
-        }
-        .sortable-header.sort-asc .sort-icon,
-        .sortable-header.sort-desc .sort-icon {
-            opacity: 1;
-            color: var(--accent-blue);
-        }
-        /* .sortable-header.sort-desc .sort-icon { transform: translateY(-50%) rotate(180deg); }  JS에서 아이콘 직접 변경 */
-
-
-        /* 다크모드 토글 버튼 */
-        .theme-toggle {
-            background: none;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 8px 12px;
-            cursor: pointer;
-            color: var(--text-primary);
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .theme-toggle:hover {
-            background-color: var(--sidebar-accent);
-            color: white;
-            border-color: var(--sidebar-accent);
-        }
-
-        /* 다크모드 스타일 */
-        body.dark-mode {
-            --main-bg: #1a1a1a;
-            --content-bg: #2d2d2d;
-            --text-primary: #e0e0e0;
-            --text-secondary: #b0b0b0;
-            --border-color: #404040;
-            --sidebar-bg: #1e1e1e;
-            --sidebar-header-bg: #252525;
-            --sidebar-text: #e0e0e0;
-            --danger-bg: #5c2329;  /* 다크모드용 임박 배경 */
-            --warning-bg: #5a3d15; /* 다크모드용 경고 배경 */
-            --safe-bg: #223d22;    /* 다크모드용 안전 배경 */
-        }
-        body.dark-mode .data-table th,
-        body.dark-mode .stats-detail-table th { background-color: #404040; color: var(--text-primary); }
-        body.dark-mode .data-table tbody tr:nth-child(even),
-        body.dark-mode .stats-detail-table tbody tr:nth-child(even) { background-color: #353535; }
-        body.dark-mode .data-table tbody tr:hover,
-        body.dark-mode .stats-detail-table tbody tr:hover { background-color: #454545 !important; }
-        body.dark-mode .filters-container .setup-input {
-            background: #404040;
-            border-color: #555;
-            color: var(--text-primary);
-        }
-        body.dark-mode .filters-container .setup-input:focus {
-            background: #4a4a4a;
-            border-color: var(--sidebar-accent);
-        }
+        .sort-icon { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); opacity: 0.5; font-size: 0.8rem; }
+        .sortable-header.sort-asc .sort-icon, .sortable-header.sort-desc .sort-icon { opacity: 1; color: var(--accent-blue); }
+        .theme-toggle { background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; cursor: pointer; color: var(--text-primary); font-size: 1rem; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px; }
+        .theme-toggle:hover { background-color: var(--sidebar-accent); color: white; border-color: var(--sidebar-accent); }
+        body.dark-mode { --main-bg: #1a1a1a; --content-bg: #2d2d2d; --text-primary: #e0e0e0; --text-secondary: #b0b0b0; --border-color: #404040; --sidebar-bg: #1e1e1e; --sidebar-header-bg: #252525; --sidebar-text: #e0e0e0; --danger-bg: #5c2329; --warning-bg: #5a3d15; --safe-bg: #223d22; }
+        body.dark-mode .data-table th, body.dark-mode .stats-detail-table th { background-color: #404040; color: var(--text-primary); }
+        body.dark-mode .data-table tbody tr:nth-child(even), body.dark-mode .stats-detail-table tbody tr:nth-child(even) { background-color: #353535; }
+        body.dark-mode .data-table tbody tr:hover, body.dark-mode .stats-detail-table tbody tr:hover { background-color: #454545 !important; }
+        body.dark-mode .filters-container .setup-input { background: #404040; border-color: #555; color: var(--text-primary); }
+        body.dark-mode .filters-container .setup-input:focus { background: #4a4a4a; border-color: var(--sidebar-accent); }
         body.dark-mode .notice-info { background: #2a3f4f; border-color: #3a5f7f; color: #a0c4e4; }
         body.dark-mode .notice-success { background: #1f3f2f; border-color: #2f5f3f; color: #a0e4a0; }
         body.dark-mode .notice-warning { background: #4f3f1f; border-color: #7f5f2f; color: #e4c4a0; }
-
         body.dark-mode .alert-card { background: var(--sidebar-header-bg); }
         body.dark-mode .alert-period { background: rgba(255,255,255,0.05); color: var(--sidebar-text); }
         body.dark-mode .alert-item.critical { background: var(--danger-bg); color: #f8c8cb; }
@@ -557,144 +138,36 @@
         body.dark-mode .stats-detail-content { background-color: #262626; }
         body.dark-mode .stats-sub-table th { background-color: #3a3a3a; }
         body.dark-mode .stats-summary-row:hover { background-color: #3f3f3f; }
-
-
-        /* ─────────── 자동완성 드롭다운 ─────────── */
         .autocomplete-container { position: relative; width: 100%; }
-        .autocomplete-dropdown {
-            position: absolute;
-            top: 100%; left: 0; right: 0;
-            background: var(--content-bg);
-            border: 1px solid var(--border-color);
-            border-top: none;
-            border-radius: 0 0 6px 6px;
-            box-shadow: var(--shadow-md);
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-        }
-        .autocomplete-item {
-            padding: 10px 14px;
-            cursor: pointer;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.9rem;
-            transition: background-color 0.2s ease;
-        }
+        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--content-bg); border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 6px 6px; box-shadow: var(--shadow-md); max-height: 200px; overflow-y: auto; z-index: 1000; display: none; }
+        .autocomplete-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; transition: background-color 0.2s ease; }
         .autocomplete-item:last-child { border-bottom: none; }
-        .autocomplete-item:hover, .autocomplete-item.selected {
-            background-color: var(--sidebar-accent);
-            color: white;
-        }
-        .autocomplete-item .match { font-weight: 700; /* color: var(--sidebar-accent); // 호버 시 흰색으로 바뀜 */ }
-        /* .autocomplete-item:hover .match, .autocomplete-item.selected .match { color: white; } */
-
-
-        /* ─────────── 컬럼 토글 ─────────── */
+        .autocomplete-item:hover, .autocomplete-item.selected { background-color: var(--sidebar-accent); color: white; }
+        .autocomplete-item .match { font-weight: 700; }
         .column-toggle-container { position: relative; }
-        .column-toggle-btn { /* 스타일은 .setup-input과 유사하게 */
-            background: var(--content-bg);
-            color: var(--text-primary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .column-toggle-btn:hover {
-            border-color: var(--sidebar-accent);
-            background-color: var(--sidebar-accent);
-            color: white;
-        }
-        .column-toggle-dropdown {
-            position: absolute;
-            top: 100%; left: 0; /* 오른쪽 정렬 필요시 right: 0; left: auto; */
-            background: var(--content-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            box-shadow: var(--shadow-md);
-            padding: 10px;
-            min-width: 200px;
-            z-index: 1000;
-            display: none;
-        }
-        .column-toggle-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 0;
-            font-size: 0.9rem;
-        }
+        .column-toggle-btn { background: var(--content-bg); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .column-toggle-btn:hover { border-color: var(--sidebar-accent); background-color: var(--sidebar-accent); color: white; }
+        .column-toggle-dropdown { position: absolute; top: 100%; left: 0; background: var(--content-bg); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: var(--shadow-md); padding: 10px; min-width: 200px; z-index: 1000; display: none; }
+        .column-toggle-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 0.9rem; }
         .column-toggle-item input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
         .column-toggle-item label { font-weight: normal; margin-bottom: 0; cursor: pointer;}
-
-
-        /* ─────────── 데이터 요약 카드 ─────────── */
-        .filter-summary-card {
-            background: var(--content-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-sm);
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            border-left: 4px solid var(--sidebar-accent);
-            display: none; /* JS로 .show 추가 시 보임 */
-        }
+        .filter-summary-card { background: var(--content-bg); border-radius: var(--border-radius); box-shadow: var(--shadow-sm); padding: 15px 20px; margin-bottom: 20px; border-left: 4px solid var(--sidebar-accent); display: none; }
         .filter-summary-card.show { display: block; animation: fadeInUp 0.3s ease-out; }
-        .summary-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .summary-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-        }
+        .summary-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; }
         .summary-stat { text-align: center; }
-        .summary-stat-value {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--sidebar-accent);
-            display: block;
-        }
-        .summary-stat-label {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 2px;
-        }
-
-        /* 스켈레톤 로딩 */
+        .summary-stat-value { font-size: 1.3rem; font-weight: 700; color: var(--sidebar-accent); display: block; }
+        .summary-stat-label { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
         .skeleton-table { width: 100%; border-collapse: collapse; min-width: 800px; }
         .skeleton-table th, .skeleton-table td { padding: 14px 18px; border-bottom: 1px solid var(--border-color); }
         .skeleton-table th { background-color: #f8f9fa; text-align: center; }
-        .skeleton-item {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-            border-radius: 4px;
-            height: 16px; width: 100%;
-        }
+        .skeleton-item { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 4px; height: 16px; width: 100%; }
         .skeleton-item.short { width: 60%; }
         .skeleton-item.medium { width: 80%; }
-        .skeleton-item.badge { width: 50px; height: 20px; border-radius: 10px; margin: auto;} /* 중앙 정렬 */
+        .skeleton-item.badge { width: 50px; height: 20px; border-radius: 10px; margin: auto;}
         @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-        /* 토스트 알림 */
-        .toast-container {
-            position: fixed; top: 80px; right: 20px;
-            z-index: 9999; display: flex; flex-direction: column; gap: 10px;
-        }
-        .toast {
-            background: var(--content-bg); border: 1px solid var(--border-color);
-            border-radius: var(--border-radius); padding: 12px 16px;
-            box-shadow: var(--shadow-md); display: flex; align-items: center;
-            gap: 10px; min-width: 300px; opacity: 0;
-            transform: translateX(100%); animation: slideIn 0.3s ease-out forwards;
-            color: var(--text-primary);
-        }
+        .toast-container { position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: var(--content-bg); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 12px 16px; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 10px; min-width: 300px; opacity: 0; transform: translateX(100%); animation: slideIn 0.3s ease-out forwards; color: var(--text-primary); }
         .toast.success { border-left: 4px solid var(--accent-green); }
         .toast.info    { border-left: 4px solid var(--accent-blue); }
         .toast.warning { border-left: 4px solid var(--accent-yellow); }
@@ -705,337 +178,87 @@
         .toast.warning .toast-icon { color: var(--accent-yellow); }
         .toast.error .toast-icon   { color: var(--accent-red); }
         .toast-message { flex: 1; font-size: 0.9rem; font-weight: 500; }
-        .toast-close {
-            background: none; border: none; color: var(--text-secondary);
-            cursor: pointer; font-size: 1.2rem; padding: 0; transition: color 0.2s ease;
-        }
+        .toast-close { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.2rem; padding: 0; transition: color 0.2s ease; }
         .toast-close:hover { color: var(--text-primary); }
         @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
         @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
-
-        /* 마이크로 애니메이션 및 효과 */
-        .nav-item::before {
-            content: ''; position: absolute; top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            transition: left 0.5s;
-        }
+        .nav-item::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); transition: left 0.5s; }
         .nav-item:hover::before { left: 100%; }
         .nav-item:hover { transform: translateX(5px); }
-
-        .filters-container .filter-button, .theme-toggle, .column-toggle-btn { /* 버튼류 공통 호버 */
-            position: relative; overflow: hidden;
-        }
-        .filters-container .filter-button::before, .theme-toggle::before, .column-toggle-btn::before {
-            content: ''; position: absolute; top: 50%; left: 50%;
-            width: 0; height: 0; background: rgba(255,255,255,0.2);
-            border-radius: 50%; transition: width 0.4s ease, height 0.4s ease; /* 부드럽게 */
-            transform: translate(-50%, -50%);
-        }
-        .filters-container .filter-button:hover::before, .theme-toggle:hover::before, .column-toggle-btn:hover::before {
-            width: 250%; height: 250%; /* 버튼을 완전히 덮도록 */
-        }
-        .filters-container .filter-button:hover, .theme-toggle:hover, .column-toggle-btn:hover {
-            transform: translateY(-2px); /* 약간 뜨는 효과 */
-            box-shadow: var(--shadow-md); /* 그림자 강화 */
-        }
-
-        /* 카드 등장 애니메이션 */
+        .filters-container .filter-button, .theme-toggle, .column-toggle-btn { position: relative; overflow: hidden; }
+        .filters-container .filter-button::before, .theme-toggle::before, .column-toggle-btn::before { content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0; background: rgba(255,255,255,0.2); border-radius: 50%; transition: width 0.4s ease, height 0.4s ease; transform: translate(-50%, -50%); }
+        .filters-container .filter-button:hover::before, .theme-toggle:hover::before, .column-toggle-btn:hover::before { width: 250%; height: 250%; }
+        .filters-container .filter-button:hover, .theme-toggle:hover, .column-toggle-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
         .stats-card, .filters-container, .data-table-container, .alert-card { animation: fadeInUp 0.6s ease-out; }
         .stats-card:nth-child(1) { animation-delay: 0.1s; }
         .stats-card:nth-child(2) { animation-delay: 0.2s; }
         .filters-container      { animation-delay: 0.1s; }
         .data-table-container   { animation-delay: 0.3s; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 테이블 줄무늬 강화 */
         body:not(.dark-mode) .data-table tbody tr:nth-child(odd) { background-color: #ffffff; }
         body:not(.dark-mode) .data-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
         body:not(.dark-mode) .data-table tbody tr:hover { background-color: #e3f2fd !important; }
-
         body.dark-mode .data-table tbody tr:nth-child(odd) { background-color: #2d2d2d; }
         body.dark-mode .data-table tbody tr:nth-child(even) { background-color: #363636; }
         body.dark-mode .data-table tbody tr:hover { background-color: #404040 !important; }
-
-        .status-badge {
-            padding: 5px 12px; border-radius: 15px; font-size: 0.75rem; font-weight: 700;
-            display: inline-block; text-transform: uppercase; letter-spacing: 0.5px;
-        }
+        .status-badge { padding: 5px 12px; border-radius: 15px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
         .status-badge.status-active-cell { background-color: rgba(40, 167, 69, 0.1); color: #1a682b; }
         .status-badge.status-inactive-cell { background-color: rgba(220, 53, 69, 0.1); color: #8c2f2f; }
         body.dark-mode .status-badge.status-active-cell { background-color: rgba(40, 167, 69, 0.2); color: #6ee78f; }
         body.dark-mode .status-badge.status-inactive-cell { background-color: rgba(220, 53, 69, 0.2); color: #f87171; }
-
-
-        /* 상세 드롭다운 */
-        .detail-dropdown {
-            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-            border-left: 4px solid var(--sidebar-accent);
-            border-radius: 0 8px 8px 0; /* 행 아래에 붙도록 */
-            margin: 0; padding: 0; overflow: hidden;
-            transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out, margin 0.4s ease-in-out; /* 부드러운 전환 */
-            max-height: 0;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
-        }
-        body.dark-mode .detail-dropdown {
-            background: linear-gradient(135deg, #3a3a3a 0%, #2d2d2d 100%);
-            border-left-color: var(--sidebar-accent);
-        }
-
-        .detail-dropdown.show {
-            max-height: 600px; /* 충분한 높이 */
-            padding: 25px; margin: 5px 0; /* 위아래 약간의 마진 */
-        }
-
-        .detail-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;
-        }
-        .detail-section {
-            background: var(--content-bg); /* 다크모드 적용 */
-            padding: 20px; border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            border: 1px solid var(--border-color); /* 다크모드 적용 */
-        }
-        .detail-section h4 {
-            color: var(--sidebar-accent); font-size: 1rem; font-weight: 700;
-            margin-bottom: 15px; padding-bottom: 8px;
-            border-bottom: 2px solid var(--border-color); /* 다크모드 적용 */
-            display: flex; align-items: center; gap: 8px;
-        }
-        .detail-item {
-            margin-bottom: 12px; font-size: 0.9rem; line-height: 1.6;
-            display: flex; align-items: flex-start;
-        }
-        .detail-item strong {
-            color: var(--text-primary); min-width: 80px; display: inline-block;
-            font-weight: 600; margin-right: 12px; flex: 0 0 auto;
-        }
+        .detail-dropdown { background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-left: 4px solid var(--sidebar-accent); border-radius: 0 8px 8px 0; margin: 0; padding: 0; overflow: hidden; transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out, margin 0.4s ease-in-out; max-height: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+        body.dark-mode .detail-dropdown { background: linear-gradient(135deg, #3a3a3a 0%, #2d2d2d 100%); border-left-color: var(--sidebar-accent); }
+        .detail-dropdown.show { max-height: 600px; padding: 25px; margin: 5px 0; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px; }
+        .detail-section { background: var(--content-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
+        .detail-section h4 { color: var(--sidebar-accent); font-size: 1rem; font-weight: 700; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--border-color); display: flex; align-items: center; gap: 8px; }
+        .detail-item { margin-bottom: 12px; font-size: 0.9rem; line-height: 1.6; display: flex; align-items: flex-start; }
+        .detail-item strong { color: var(--text-primary); min-width: 80px; display: inline-block; font-weight: 600; margin-right: 12px; flex: 0 0 auto; }
         .detail-item span { flex: 1; color: var(--text-secondary); }
-        
-        .detail-full-width {
-            grid-column: 1 / -1;
-            background: #fff3cd; border: 1px solid #ffeaa7;
-            border-radius: 8px; padding: 15px;
-        }
-        body.dark-mode .detail-full-width {
-            background: #4f3f1f; border-color: #7f5f2f;
-        }
+        .detail-full-width { grid-column: 1 / -1; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; }
+        body.dark-mode .detail-full-width { background: #4f3f1f; border-color: #7f5f2f; }
         .detail-full-width .detail-item { margin-bottom: 0; }
         .detail-full-width strong { color: #856404; }
         body.dark-mode .detail-full-width strong { color: #e4c4a0; }
-
-
-        /* ─────────── 현황 통계 페이지 (수정됨) ─────────── */
-        .page-section-header {
-            font-size: 1.4rem; font-weight: 700; margin-bottom: 16px;
-            border-left: 4px solid var(--accent-blue);
-            padding-left: 12px; color: var(--text-primary);
-            display: flex; align-items: center; gap: 10px;
-        }
-
-        .summary-metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .metric-item {
-            background: var(--content-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            box-shadow: var(--shadow-sm);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .metric-item:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-md);
-        }
-        .metric-icon {
-            font-size: 1.8rem;
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-        }
+        .page-section-header { font-size: 1.4rem; font-weight: 700; margin-bottom: 16px; border-left: 4px solid var(--accent-blue); padding-left: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 10px; }
+        .summary-metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .metric-item { background: var(--content-bg); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 20px; display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; }
+        .metric-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+        .metric-icon { font-size: 1.8rem; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; }
         .metric-icon.blue { background-color: #3498db; }
         .metric-icon.green { background-color: #2ecc71; }
         .metric-icon.purple { background-color: #9b59b6; }
         .metric-icon.orange { background-color: #e67e22; }
-
-        .metric-content .metric-label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-        .metric-content .metric-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
+        .metric-content .metric-label { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px; }
+        .metric-content .metric-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
         .metric-content .metric-value-small { font-size: 1.1rem; }
-
         .tabs-container { margin-top: 25px; }
-        .tab-links {
-            display: flex;
-            gap: 5px;
-            border-bottom: 2px solid var(--border-color);
-            margin-bottom: -2px; /* 아래 테두리와 겹치게 */
-        }
-        .tab-link {
-            padding: 10px 20px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            border-bottom: none;
-            border-radius: 8px 8px 0 0;
-            background: #e9ecef;
-            color: var(--text-secondary);
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-        .tab-link.active {
-            background: var(--content-bg);
-            border-color: var(--border-color);
-            color: var(--text-primary);
-            border-bottom: 2px solid var(--content-bg);
-        }
-        .tab-content {
-            display: none;
-            background: var(--content-bg);
-            padding: 20px;
-            border: 2px solid var(--border-color);
-            border-radius: 0 8px 8px 8px;
-            animation: fadeInUp 0.4s ease;
-        }
-
-        .stats-detail-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .stats-detail-table th, .stats-detail-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.9rem;
-            text-align: left;
-        }
-        .stats-detail-table th {
-            background-color: #f8f9fa;
-            font-weight: 700;
-        }
-        .stats-detail-table td:not(:first-child),
-        .stats-detail-table th:not(:first-child) {
-            text-align: right;
-        }
-        .stats-summary-row {
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-        .stats-summary-row:hover {
-            background-color: #f0f8ff;
-        }
-        .stats-summary-row.expanded {
-            background-color: #e3f2fd;
-            font-weight: 700;
-        }
-
-        .stats-detail-row {
-            display: none;
-        }
-        .stats-detail-content {
-            background-color: #fafafa;
-            padding: 15px;
-            box-shadow: inset 0 3px 5px rgba(0,0,0,0.04);
-        }
-        .stats-sub-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-        }
-        .stats-sub-table th, .stats-sub-table td {
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            vertical-align: middle;
-        }
-        .stats-sub-table th {
-            background-color: #e9ecef;
-        }
-        
-        .stats-note {
-            background: #fff8e1; border: 1px solid #ffeeba;
-            border-radius: var(--border-radius); padding: 15px 20px;
-            color: #856404; font-size: 0.9rem; display: flex; align-items: center;
-            margin-top: 25px;
-        }
-        body.dark-mode .stats-note {
-            background: #4f3f1f; border-color: #7f5f2f; color: #e4c4a0;
-        }
+        .tab-links { display: flex; gap: 5px; border-bottom: 2px solid var(--border-color); margin-bottom: -2px; }
+        .tab-link { padding: 10px 20px; cursor: pointer; border: 2px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0; background: #e9ecef; color: var(--text-secondary); font-weight: 600; transition: all 0.2s ease; }
+        .tab-link.active { background: var(--content-bg); border-color: var(--border-color); color: var(--text-primary); border-bottom: 2px solid var(--content-bg); }
+        .tab-content { display: none; background: var(--content-bg); padding: 20px; border: 2px solid var(--border-color); border-radius: 0 8px 8px 8px; animation: fadeInUp 0.4s ease; }
+        .stats-detail-table { width: 100%; border-collapse: collapse; }
+        .stats-detail-table th, .stats-detail-table td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; text-align: left; }
+        .stats-detail-table th { background-color: #f8f9fa; font-weight: 700; }
+        .stats-detail-table td:not(:first-child), .stats-detail-table th:not(:first-child) { text-align: right; }
+        .stats-summary-row { cursor: pointer; transition: background-color 0.2s ease; }
+        .stats-summary-row:hover { background-color: #f0f8ff; }
+        .stats-summary-row.expanded { background-color: #e3f2fd; font-weight: 700; }
+        .stats-detail-row { display: none; }
+        .stats-detail-content { background-color: #fafafa; padding: 15px; box-shadow: inset 0 3px 5px rgba(0,0,0,0.04); }
+        .stats-sub-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .stats-sub-table th, .stats-sub-table td { padding: 8px 12px; border: 1px solid var(--border-color); vertical-align: middle; }
+        .stats-sub-table th { background-color: #e9ecef; }
+        .stats-note { background: #fff8e1; border: 1px solid #ffeeba; border-radius: var(--border-radius); padding: 15px 20px; color: #856404; font-size: 0.9rem; display: flex; align-items: center; margin-top: 25px; }
+        body.dark-mode .stats-note { background: #4f3f1f; border-color: #7f5f2f; color: #e4c4a0; }
         .stats-note i { margin-right: 8px; }
-
-        /* 반응형 */
-        @media (max-width: 1200px) {
-            .filters-container { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
-            .data-table th, .data-table td { padding: 12px 10px; font-size: 0.85rem; max-width: 120px; }
-            .data-table td.remarks-cell { max-width: 150px; }
-        }
-        @media (max-width: 1040px) { /* 태블릿 및 작은 데스크탑 */
-            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
-            .sidebar.mobile-active { transform: translateX(0); }
-            .main-content { margin-left: 0; }
-            .mobile-menu-toggle { display: block !important; }
-            .content-area { padding: 20px 15px; }
-            .main-header { padding: 15px 20px; flex-wrap: wrap; gap: 10px; }
-            .main-title { font-size: 1.4rem; }
-            .main-breadcrumb { font-size: 0.8rem; }
-            .summary-metrics-grid { grid-template-columns: 1fr; }
-            .data-table { min-width: 700px; }
-            .data-table th, .data-table td { font-size: 0.8rem; padding: 10px 8px; max-width: 100px; }
-            .data-table td.remarks-cell { max-width: 120px; min-width: 80px; }
-            /* .data-table th { position: static; } 헤더 고정 유지 */
-            .filters-container { grid-template-columns: 1fr; gap: 15px; }
-            .detail-grid { grid-template-columns: 1fr; gap: 15px; }
-            .detail-section { padding: 15px; }
-            .detail-dropdown.show { padding: 15px; }
-        }
-        @media (max-width: 768px) { /* 모바일 */
-            .main-header { flex-direction: column; align-items: flex-start; }
-            .theme-toggle { align-self: flex-end; margin-top: 10px; } /* 위치 조정 */
-            .data-table { min-width: 600px; }
-            .data-table th, .data-table td { padding: 8px 6px; font-size: 0.75rem; max-width: 80px; }
-            .data-table td.remarks-cell { max-width: 100px; }
-        }
-        @media (max-width: 480px) { /* 작은 모바일 */
-            .main-title { font-size: 1.2rem; }
-            .main-breadcrumb { font-size: 0.75rem; }
-            .content-area { padding: 15px 10px; }
-            .data-table { min-width: 500px; }
-            .data-table th, .data-table td { font-size: 0.7rem; padding: 6px 4px; max-width: 70px; }
-            .data-table td.remarks-cell { max-width: 80px; }
-            .filters-container { padding: 15px; }
-            .toast-container { right: 10px; top: 70px; } /* 토스트 위치 조정 */
-            .toast { min-width: 280px; }
-        }
-
-        .loading {
-            text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 1rem;
-        }
-
-        /* 모달 (현재 사용 안함, 필요시 활성화) */
-        .modal {
-            display: none; position: fixed; z-index: 2000;
-            left: 0; top: 0; width: 100%; height: 100%;
-            overflow: auto; background-color: rgba(0,0,0,0.6);
-        }
-        .modal-content {
-            background-color: var(--content-bg); margin: 10% auto; padding: 25px;
-            border: 1px solid var(--border-color); border-radius: var(--border-radius);
-            width: 80%; max-width: 700px; box-shadow: var(--shadow-lg);
-            animation: modalOpen 0.3s ease-out;
-        }
+        @media (max-width: 1200px) { .filters-container { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; } .data-table th, .data-table td { padding: 12px 10px; font-size: 0.85rem; max-width: 120px; } .data-table td.remarks-cell { max-width: 150px; } }
+        @media (max-width: 1040px) { .sidebar { transform: translateX(-100%); transition: transform 0.3s ease-in-out; } .sidebar.mobile-active { transform: translateX(0); } .main-content { margin-left: 0; } .mobile-menu-toggle { display: block !important; } .content-area { padding: 20px 15px; } .main-header { padding: 15px 20px; flex-wrap: wrap; gap: 10px; } .main-title { font-size: 1.4rem; } .main-breadcrumb { font-size: 0.8rem; } .summary-metrics-grid { grid-template-columns: 1fr; } .data-table { min-width: 700px; } .data-table th, .data-table td { font-size: 0.8rem; padding: 10px 8px; max-width: 100px; } .data-table td.remarks-cell { max-width: 120px; min-width: 80px; } .filters-container { grid-template-columns: 1fr; gap: 15px; } .detail-grid { grid-template-columns: 1fr; gap: 15px; } .detail-section { padding: 15px; } .detail-dropdown.show { padding: 15px; } }
+        @media (max-width: 768px) { .main-header { flex-direction: column; align-items: flex-start; } .theme-toggle { align-self: flex-end; margin-top: 10px; } .data-table { min-width: 600px; } .data-table th, .data-table td { padding: 8px 6px; font-size: 0.75rem; max-width: 80px; } .data-table td.remarks-cell { max-width: 100px; } }
+        @media (max-width: 480px) { .main-title { font-size: 1.2rem; } .main-breadcrumb { font-size: 0.75rem; } .content-area { padding: 15px 10px; } .data-table { min-width: 500px; } .data-table th, .data-table td { font-size: 0.7rem; padding: 6px 4px; max-width: 70px; } .data-table td.remarks-cell { max-width: 80px; } .filters-container { padding: 15px; } .toast-container { right: 10px; top: 70px; } .toast { min-width: 280px; } }
+        .loading { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 1rem; }
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+        .modal-content { background-color: var(--content-bg); margin: 10% auto; padding: 25px; border: 1px solid var(--border-color); border-radius: var(--border-radius); width: 80%; max-width: 700px; box-shadow: var(--shadow-lg); animation: modalOpen 0.3s ease-out; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
         .modal-title { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); }
         .modal-close-btn { background:none; border:none; font-size:1.5rem; cursor:pointer; color: var(--text-secondary); }
@@ -1043,6 +266,42 @@
         .modal-body { line-height: 1.7; }
         @keyframes modalOpen { from { opacity:0; transform: translateY(-50px); } to { opacity:1; transform: translateY(0); } }
 
+        /* ─────────── 인증 화면 스타일 (새로 추가) ─────────── */
+        #auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--main-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            display: none; /* JS로 제어 */
+        }
+        .auth-container {
+            background: var(--content-bg);
+            padding: 30px 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            width: 90%;
+            max-width: 350px;
+        }
+        .auth-container.shake { animation: shake 0.5s; }
+        .auth-container h3 { margin-bottom: 10px; font-size: 1.5rem; color: var(--text-primary); }
+        .auth-container p { margin-bottom: 20px; color: var(--text-secondary); }
+        #pin-input { width: 100%; padding: 12px; font-size: 1.2rem; text-align: center; border: 2px solid var(--border-color); border-radius: 6px; margin-bottom: 20px; letter-spacing: 0.5em; }
+        #auth-form button { width: 100%; padding: 12px; font-size: 1rem; font-weight: 600; border: none; border-radius: 6px; background-color: var(--sidebar-accent); color: white; cursor: pointer; transition: background-color 0.2s; }
+        #auth-form button:hover { background-color: #2980b9; }
+        #auth-error-msg { color: var(--accent-red); height: 20px; font-weight: 600; margin-top: 15px; margin-bottom: 0; }
+        @keyframes shake {
+          10%, 90% { transform: translate3d(-1px, 0, 0); }
+          20%, 80% { transform: translate3d(2px, 0, 0); }
+          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+          40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
     </style>
 </head>
 <body>
@@ -1058,9 +317,6 @@
         </div>
     </div>
 
-    <div class="app-container">
-        </div>
-    
     <div class="app-container">
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -1325,42 +581,31 @@
         </div>
 
     <script>
-        // ─────────── 인증 로직 (새로 추가) ───────────
+        // ─────────── 인증 로직 (수정된 최종 버전) ───────────
         document.addEventListener('DOMContentLoaded', () => {
-            // 여기에 사용할 비밀번호(PIN)를 설정하세요.
-            const VALID_PINS = ['0115', '4266', '4550', '0709', '2907']; 
-
+            const VALID_PINS = ['1234', '5678']; // 여기에 사용할 핀번호 설정
             const authOverlay = document.getElementById('auth-overlay');
             const authForm = document.getElementById('auth-form');
             const pinInput = document.getElementById('pin-input');
             const errorMsg = document.getElementById('auth-error-msg');
             const authContainer = document.querySelector('.auth-container');
+            const appContainer = document.querySelector('.app-container');
 
-            // 세션 스토리지에 인증 정보가 있는지 확인
-            if (sessionStorage.getItem('is-authenticated') === 'true') {
-    // 이미 인증되었다면 인증 화면을 건너뛰고 바로 대시보드를 보여줌
-    document.querySelector('.app-container').classList.add('visible');
-    authOverlay.style.display = 'none';
-} else {
-    // 인증되지 않았다면 인증 화면 표시
-    authOverlay.style.display = 'flex';
-    pinInput.focus();
-}
+            // 페이지가 로드될 때마다 항상 인증 화면을 표시
+            authOverlay.style.display = 'flex';
+            pinInput.focus();
 
             const checkPin = () => {
-                // 입력한 PIN이 유효한 PIN 목록에 포함되어 있는지 확인
                 if (VALID_PINS.includes(pinInput.value)) {
-    sessionStorage.setItem('is-authenticated', 'true');
-    authOverlay.style.display = 'none';
-    document.querySelector('.app-container').classList.add('visible'); // 메인 컨테이너를 보이게 함
-}
-                else {
-                    // PIN이 틀리면 에러 메시지 표시 및 입력창 초기화
+                    // PIN이 맞으면 인증 화면을 숨기고 대시보드를 표시
+                    authOverlay.style.display = 'none';
+                    appContainer.classList.add('visible');
+                } else {
+                    // PIN이 틀리면 에러 메시지 표시
                     errorMsg.textContent = '번호가 올바르지 않습니다.';
                     authContainer.classList.add('shake');
                     pinInput.value = '';
                     pinInput.focus();
-                    // 0.5초 후 흔들림 효과 제거
                     setTimeout(() => {
                         authContainer.classList.remove('shake');
                     }, 500);
@@ -1368,20 +613,46 @@
             };
 
             authForm.addEventListener('submit', (e) => {
-                e.preventDefault(); // 폼 제출 기본 동작 방지
+                e.preventDefault();
                 checkPin();
             });
         });
 
+        // ─────────── PWA 설치 버튼 로직 ───────────
+        let deferredPrompt;
+        const installPwaBtn = document.getElementById('installPwaBtn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installPwaBtn) {
+                installPwaBtn.style.display = 'flex';
+            }
+        });
+        if (installPwaBtn) {
+            installPwaBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    installPwaBtn.style.display = 'none';
+                }
+            });
+        }
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            if (installPwaBtn) {
+                installPwaBtn.style.display = 'none';
+            }
+        });
 
         // ─────────── 전역 변수 ───────────
         let connectionData = [];
         let allOfficeData = [];
         let filteredOfficeData = [];
-        let searchTerm = ''; // applyAllFilters에서 직접 input 값을 읽으므로, 이 변수는 자동완성 등 보조 용도
+        let searchTerm = '';
         let currentExpiryFilter = 'all';
         let currentSortColumn = '';
-        let currentSortDirection = ''; // 'asc', 'desc', 또는 '' (기본/정렬 해제)
+        let currentSortDirection = '';
         let isDarkMode = false;
         let autocompleteData = [];
         let selectedAutocompleteIndex = -1;
@@ -1389,10 +660,10 @@
             '현황': true, '사용처': true, '지역': true, '지점명': true, '계약일': true, '만료일': true,
             '남은기간': true, '보증금': true, '월세': true, '비고': false
         };
-        let expandedOfficeId = null; // 현재 열린 상세 정보 행 ID
-        let expandedStatRow = null; // 통계 테이블에서 현재 열린 행
+        let expandedOfficeId = null;
+        let expandedStatRow = null;
 
-        // ─────────── DOMContentLoaded ───────────
+        // ─────────── DOMContentLoaded (기존 로직) ───────────
         window.addEventListener('DOMContentLoaded', function() {
             loadThemeFromStorage();
             
@@ -1409,18 +680,17 @@
                 applyAllFilters();
             });
             document.getElementById('statusFilter').addEventListener('change', applyAllFilters);
-            document.getElementById('usageFilter').addEventListener('change', applyAllFilters); // New
-            document.getElementById('regionFilter').addEventListener('change', applyAllFilters); // New
+            document.getElementById('usageFilter').addEventListener('change', applyAllFilters);
+            document.getElementById('regionFilter').addEventListener('change', applyAllFilters);
 
             document.getElementById('resetFiltersBtn').addEventListener('click', () => {
                 searchTerm = ''; currentExpiryFilter = 'all';
                 document.getElementById('searchInput').value = '';
                 document.getElementById('expiryFilter').value = 'all';
                 document.getElementById('statusFilter').value = '전체';
-                document.getElementById('usageFilter').value = '전체'; // New
-                document.getElementById('regionFilter').value = '전체'; // New
+                document.getElementById('usageFilter').value = '전체';
+                document.getElementById('regionFilter').value = '전체';
                 currentSortColumn = ''; currentSortDirection = ''; 
-                // populateUsageAndRegionFilters(); // Re-populate to ensure "전체" is selected if options changed dynamically
                 applyAllFilters();
                 showToast('필터가 초기화되었습니다', 'info', 2000);
             });
@@ -1450,9 +720,7 @@
             notice.innerHTML = '🔄 <strong>연결 중...</strong> Apps Script에서 데이터를 불러오는 중입니다.';
             showSkeletonTable(); 
 
-            // Apps Script가 기대하는 'sheet' 파라미터를 사용하고, 'action' 파라미터는 제거합니다.
-            // 'sheetName' 대신 'sheet'를 사용합니다.
-            fetch(`${APPS_SCRIPT_URL}?sheet=임대현황&t=${Date.now()}`, { // 이렇게 수정!
+            fetch(`${APPS_SCRIPT_URL}?sheet=임대현황&t=${Date.now()}`, {
                 method: 'GET', headers: { 'Accept': 'application/json' }
             })
             .then(response => {
@@ -1460,14 +728,12 @@
                 return response.json();
             })
             .then(result => {
-                // Apps Script의 응답 구조에 맞춰서 데이터 처리 (result.data가 실제 데이터 배열)
                 if (result && result.status === 'success' && Array.isArray(result.data)) {
                     handleConnectionSuccess(result.data);
-                } else if (Array.isArray(result)) { // 혹시 이전처럼 데이터 배열만 바로 오는 경우도 고려 (호환성)
+                } else if (Array.isArray(result)) { 
                     handleConnectionSuccess(result);
                 }
                 else {
-                    // 에러 메시지가 result.error 또는 result.message 에 담겨 올 수 있음
                     let errorMessage = '예상치 못한 응답 형식';
                     if (result && result.message) errorMessage = result.message;
                     if (result && result.error) errorMessage += ` (${result.error})`;
@@ -1487,7 +753,7 @@
             setTimeout(() => { if(notice) notice.style.display = 'none'; }, 3000);
 
             parseAndRenderOfficeData(sheetData); 
-            populateUsageAndRegionFilters(); // Populate new filters
+            populateUsageAndRegionFilters();
             setupAutocompleteData(); 
             updateSidebarAlert(allOfficeData); 
         }
@@ -1518,7 +784,6 @@
             if (visibleColumns['월세']) headers += '<th>월세 (원)</th>';
             if (visibleColumns['비고']) headers += '<th>비고</th>';
 
-
             let skeletonRows = '';
             for (let i = 0; i < 5; i++) { 
                 skeletonRows += '<tr>';
@@ -1537,7 +802,6 @@
             container.innerHTML = `<table class="skeleton-table"><thead><tr>${headers}</tr></thead><tbody>${skeletonRows}</tbody></table>`;
         }
 
-
         // ─────────── 스프레드시트 데이터 파싱 & 테이블 렌더링 ───────────
         function parseAndRenderOfficeData(rawData) {
             if (!rawData || rawData.length < 1) {
@@ -1545,7 +809,6 @@
                 applyAllFilters(); 
                 return;
             }
-
             let headerIdx = -1;
             for (let i = 0; i < Math.min(10, rawData.length); i++) {
                 const row = rawData[i];
@@ -1554,15 +817,12 @@
                     break;
                 }
             }
-
             if (headerIdx < 0) {
                 allOfficeData = [];
                 showMessageOnTable('⚠️ 시트에서 "지점명" 헤더를 찾을 수 없습니다. 데이터 형식을 확인해주세요.');
                 return;
             }
-
             const headers = rawData[headerIdx].map(h => h ? String(h).trim() : '');
-            
             allOfficeData = [];
             for (let i = headerIdx + 1; i < rawData.length; i++) {
                 const row = rawData[i];
@@ -1570,19 +830,17 @@
                 if (!Array.isArray(row) || (branchNameIndex === -1 || !row[branchNameIndex]) && row.every(cell => !cell)) {
                     continue;
                 }
-
                 const office = { id: `office_${i}` };
                 headers.forEach((header, index) => {
                     if (header) {
                         office[header] = (row[index] !== undefined && row[index] !== null) ? row[index] : '';
                     }
                 });
-                
                 office.지점명 = String(office['지점명'] || '');
                 office.현황 = String(office['현황'] || '');
                 office.주소 = String(office['주소'] || '');
-                office.사용처 = String(office['사용처'] || ''); // Ensure 사용처 is processed
-                office.지역 = String(office['지역'] || '');   // Ensure 지역 is processed
+                office.사용처 = String(office['사용처'] || '');
+                office.지역 = String(office['지역'] || '');
                 const rawContractDate = office['계약일']; 
                 const rawExpiryDate = office['만료일'];   
                 office.월세_원본 = office['월세']; 
@@ -1592,7 +850,6 @@
                 office.면적_원본 = office['총면적']; 
                 office.평형_원본 = office['평형'];
                 office.비고 = String(office['비고'] || '');
-
                 if (rawExpiryDate) {
                     const parsedExpiryDate = parseDateValue(rawExpiryDate);
                     if (parsedExpiryDate && !isNaN(parsedExpiryDate.getTime())) {
@@ -1607,19 +864,17 @@
                 } else {
                     office.남은일수 = null;
                 }
-
                 office.계약일 = formatDate(rawContractDate);
                 office.만료일 = formatDate(rawExpiryDate);
                 office.월세 = formatNumber(office.월세_원본);
                 office.보증금 = formatNumber(office.보증금_원본);
                 office.면적 = formatNumber(office.면적_원본);
                 office.평형 = office.평형_원본 ? parseFloat(office.평형_원본) : 0; 
-
                 office.rawRowData = row; 
                 office.headers = headers; 
                 allOfficeData.push(office);
             }
-            populateUsageAndRegionFilters(); // Populate filters after allOfficeData is ready
+            populateUsageAndRegionFilters();
             applyAllFilters(); 
         }
 
@@ -1627,24 +882,17 @@
         function populateSelectWithOptions(selectElementId, items, defaultOptionText = "전체") {
             const selectElement = document.getElementById(selectElementId);
             if (!selectElement) return;
-
             const currentSelectedValue = selectElement.value;
-
-            // 기존 옵션들 제거 (기본 "전체" 옵션 제외)
             while (selectElement.options.length > 1) {
                 selectElement.remove(1);
             }
-
             const uniqueItems = [...new Set(items.map(item => String(item || '').trim()).filter(item => item !== ''))].sort((a, b) => a.localeCompare(b, 'ko'));
-            
             uniqueItems.forEach(item => {
                 const option = document.createElement('option');
                 option.value = item;
                 option.textContent = item;
                 selectElement.appendChild(option);
             });
-            
-            // 이전에 선택된 값 또는 기본값으로 복원
             if (Array.from(selectElement.options).some(opt => opt.value === currentSelectedValue)) {
                 selectElement.value = currentSelectedValue;
             } else {
@@ -1653,51 +901,43 @@
         }
 
         function populateUsageAndRegionFilters() {
-            if (allOfficeData.length === 0) { // 데이터 없으면 기본 옵션만 유지
+            if (allOfficeData.length === 0) {
                 populateSelectWithOptions('usageFilter', []);
                 populateSelectWithOptions('regionFilter', []);
                 return;
             }
-
             const usages = allOfficeData.map(o => o.사용처);
             const regions = allOfficeData.map(o => o.지역);
-
             populateSelectWithOptions('usageFilter', usages);
             populateSelectWithOptions('regionFilter', regions);
         }
-
 
         // ─────────── 필터 적용 ───────────
         function applyAllFilters() {
             let data = allOfficeData.slice();
             const searchInputVal = document.getElementById('searchInput').value || '';
             const term = searchInputVal.trim().toLowerCase();
-
             if (term) {
                 data = data.filter(o => {
                     const nameVal = String(o.지점명 || '').toLowerCase();
                     const addrVal = String(o.주소 || '').toLowerCase();
-                    const usageVal = String(o.사용처 || '').toLowerCase(); // Search includes usage
-                    const regionVal = String(o.지역 || '').toLowerCase(); // Search includes region
+                    const usageVal = String(o.사용처 || '').toLowerCase();
+                    const regionVal = String(o.지역 || '').toLowerCase();
                     return nameVal.includes(term) || addrVal.includes(term) || usageVal.includes(term) || regionVal.includes(term);
                 });
             }
-
             const statusVal = (document.getElementById('statusFilter').value || '').trim();
             if (statusVal && statusVal !== '전체') {
                 data = data.filter(o => o.현황 === statusVal);
             }
-
-            const usageVal = (document.getElementById('usageFilter').value || '').trim(); // New filter
+            const usageVal = (document.getElementById('usageFilter').value || '').trim();
             if (usageVal && usageVal !== '전체') {
                 data = data.filter(o => String(o.사용처 || '') === usageVal);
             }
-
-            const regionVal = (document.getElementById('regionFilter').value || '').trim(); // New filter
+            const regionVal = (document.getElementById('regionFilter').value || '').trim();
             if (regionVal && regionVal !== '전체') {
                 data = data.filter(o => String(o.지역 || '') === regionVal);
             }
-
             const expiryVal = (document.getElementById('expiryFilter').value || '').trim();
             if (expiryVal && expiryVal !== 'all') {
                 const thresh = parseInt(expiryVal, 10);
@@ -1707,12 +947,10 @@
                     return o.남은일수 >= 0 && o.남은일수 <= thresh;
                 });
             }
-            
             if (currentSortColumn && currentSortDirection) {
                  data.sort((a, b) => {
                     let aVal = a[currentSortColumn];
                     let bVal = b[currentSortColumn];
-
                     if (currentSortColumn === '남은일수') {
                         aVal = aVal === null || isNaN(aVal) ? (currentSortDirection === 'asc' ? Infinity : -Infinity) : Number(aVal);
                         bVal = bVal === null || isNaN(bVal) ? (currentSortDirection === 'asc' ? Infinity : -Infinity) : Number(bVal);
@@ -1729,9 +967,8 @@
                         if (!dateA && !dateB) return 0;
                         if (!dateA || isNaN(dateA.getTime())) return currentSortDirection === 'asc' ? 1 : -1;
                         if (!dateB || isNaN(dateB.getTime())) return currentSortDirection === 'asc' ? -1 : 1;
-                        return currentSortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+                        return currentSortDirection === 'asc' ? dateA - dateB : dateB - aVal;
                     }
-                    // For '사용처', '지역', '지점명', '현황'
                     aVal = String(aVal || '').toLowerCase(); 
                     bVal = String(bVal || '').toLowerCase();
                     if (aVal < bVal) return currentSortDirection === 'asc' ? -1 : 1;
@@ -1739,8 +976,6 @@
                     return 0;
                 });
             }
-
-
             filteredOfficeData = data;
             renderOfficeTable(data);
             updateFilterSummary(data); 
@@ -1751,12 +986,11 @@
             try {
                 const container = document.getElementById('officesTableContainer');
                 if (!container) { console.error('테이블 컨테이너를 찾을 수 없습니다'); return; }
-
                 if (!offices || offices.length === 0) {
                     const isActiveFilter = (document.getElementById('searchInput').value.trim() || 
                                        document.getElementById('statusFilter').value !== '전체' ||
-                                       document.getElementById('usageFilter').value !== '전체' || // New
-                                       document.getElementById('regionFilter').value !== '전체' || // New
+                                       document.getElementById('usageFilter').value !== '전체' ||
+                                       document.getElementById('regionFilter').value !== '전체' ||
                                        document.getElementById('expiryFilter').value !== 'all');
                     if (isActiveFilter || allOfficeData.length === 0 && connectionData.length === 0) {
                          showMessageOnTable('조건에 맞는 사무실 데이터가 없습니다.');
@@ -1765,23 +999,19 @@
                     }
                     return;
                 }
-
                 const visibleColCount = Object.values(visibleColumns).filter(Boolean).length;
-
                 let headerHtml = '<tr>';
-if (visibleColumns['현황']) headerHtml += `<th class="sortable-header" data-sort="현황" onclick="sortTable('현황')">현황 <i class="fas ${currentSortColumn === '현황' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
-if (visibleColumns['사용처']) headerHtml += `<th class="sortable-header" data-sort="사용처" onclick="sortTable('사용처')">사용처 <i class="fas ${currentSortColumn === '사용처' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
-if (visibleColumns['지역']) headerHtml += `<th class="sortable-header" data-sort="지역" onclick="sortTable('지역')">지역 <i class="fas ${currentSortColumn === '지역' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
-if (visibleColumns['지점명']) headerHtml += `<th class="sortable-header" data-sort="지점명" onclick="sortTable('지점명')">지점명 <i class="fas ${currentSortColumn === '지점명' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
+                if (visibleColumns['현황']) headerHtml += `<th class="sortable-header" data-sort="현황" onclick="sortTable('현황')">현황 <i class="fas ${currentSortColumn === '현황' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
+                if (visibleColumns['사용처']) headerHtml += `<th class="sortable-header" data-sort="사용처" onclick="sortTable('사용처')">사용처 <i class="fas ${currentSortColumn === '사용처' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
+                if (visibleColumns['지역']) headerHtml += `<th class="sortable-header" data-sort="지역" onclick="sortTable('지역')">지역 <i class="fas ${currentSortColumn === '지역' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
+                if (visibleColumns['지점명']) headerHtml += `<th class="sortable-header" data-sort="지점명" onclick="sortTable('지점명')">지점명 <i class="fas ${currentSortColumn === '지점명' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
                 if (visibleColumns['계약일']) headerHtml += `<th class="sortable-header" data-sort="계약일" onclick="sortTable('계약일')">계약일 <i class="fas ${currentSortColumn === '계약일' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
                 if (visibleColumns['만료일']) headerHtml += `<th class="sortable-header" data-sort="만료일" onclick="sortTable('만료일')">만료일 <i class="fas ${currentSortColumn === '만료일' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
                 if (visibleColumns['남은기간']) headerHtml += `<th class="sortable-header" data-sort="남은일수" onclick="sortTable('남은일수')">남은 기간 <i class="fas ${currentSortColumn === '남은일수' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
                 if (visibleColumns['보증금']) headerHtml += `<th class="sortable-header" data-sort="보증금" onclick="sortTable('보증금')">보증금 (원) <i class="fas ${currentSortColumn === '보증금' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
                 if (visibleColumns['월세']) headerHtml += `<th class="sortable-header" data-sort="월세" onclick="sortTable('월세')">월세 (원) <i class="fas ${currentSortColumn === '월세' ? (currentSortDirection === 'asc' ? 'fa-sort-up' : (currentSortDirection === 'desc' ? 'fa-sort-down' : 'fa-sort')) : 'fa-sort'} sort-icon"></i></th>`;
                 headerHtml += '</tr>';
-
                 let html = `<table class="data-table"><thead>${headerHtml}</thead><tbody>`;
-
                 offices.forEach(o => {
                     const statusClass = o.현황 === '사용중' ? 'status-active-cell' : 'status-inactive-cell';
                     let rowStyle = '', daysStyle = '';
@@ -1794,30 +1024,20 @@ if (visibleColumns['지점명']) headerHtml += `<th class="sortable-header" data
                             daysStyle = `font-weight:650;`;
                         }
                     }
-                    
-                    const daysText = (o.남은일수 !== null && !isNaN(o.남은일수))
-                        ? (o.남은일수 < 0 ? `만료 ${Math.abs(o.남은일수)}일 지남` : (o.남은일수 === 0 ? '오늘만료' : `${o.남은일수}일`))
-                        : (o.만료일 ? '-' : '');
-
+                    const daysText = (o.남은일수 !== null && !isNaN(o.남은일수)) ? (o.남은일수 < 0 ? `만료 ${Math.abs(o.남은일수)}일 지남` : (o.남은일수 === 0 ? '오늘만료' : `${o.남은일수}일`)) : (o.만료일 ? '-' : '');
                     html += `<tr id="row-${o.id}" style="${rowStyle}" onclick="toggleOfficeDetails('${o.id}')">`;
-if (visibleColumns['현황']) html += `<td><span class="status-badge ${statusClass}">${o.현황 || '-'}</span></td>`;
-if (visibleColumns['사용처']) html += `<td>${o.사용처 || '-'}</td>`;
-if (visibleColumns['지역']) html += `<td>${o.지역 || '-'}</td>`;
-if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
+                    if (visibleColumns['현황']) html += `<td><span class="status-badge ${statusClass}">${o.현황 || '-'}</span></td>`;
+                    if (visibleColumns['사용처']) html += `<td>${o.사용처 || '-'}</td>`;
+                    if (visibleColumns['지역']) html += `<td>${o.지역 || '-'}</td>`;
+                    if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                     if (visibleColumns['계약일']) html += `<td>${o.계약일 || '-'}</td>`;
                     if (visibleColumns['만료일']) html += `<td>${o.만료일 || '-'}</td>`;
                     if (visibleColumns['남은기간']) html += `<td style="${daysStyle}">${daysText}</td>`;
                     if (visibleColumns['보증금']) html += `<td>${o.보증금 || '-'}</td>`;
                     if (visibleColumns['월세']) html += `<td>${o.월세 || '-'}</td>`;
                     html += `</tr>`;
-
-                    html += `<tr id="detail-${o.id}" class="detail-row" style="display:none;">
-                                <td colspan="${visibleColCount > 0 ? visibleColCount : 1}" style="padding:0; border:none;">
-                                    <div class="detail-dropdown" id="dropdown-${o.id}"></div>
-                                </td>
-                            </tr>`;
+                    html += `<tr id="detail-${o.id}" class="detail-row" style="display:none;"><td colspan="${visibleColCount > 0 ? visibleColCount : 1}" style="padding:0; border:none;"><div class="detail-dropdown" id="dropdown-${o.id}"></div></td></tr>`;
                 });
-
                 html += `</tbody></table>`;
                 container.innerHTML = html;
             } catch (error) {
@@ -1830,11 +1050,9 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
         function updateSidebarAlert(dataToProcess) {
             const wrapper = document.getElementById('sidebarAlertBody');
             if (!wrapper) return;
-
             const soonAll = dataToProcess.filter(o => o.현황 === '사용중' && o.남은일수 !== null && o.남은일수 >= 0);
             const twoMonths = soonAll.filter(o => o.남은일수 <= 60).sort((a,b) => a.남은일수 - b.남은일수);
             const sixMonths = soonAll.filter(o => o.남은일수 > 60 && o.남은일수 <= 180).sort((a,b) => a.남은일수 - b.남은일수);
-
             if (!twoMonths.length && !sixMonths.length) {
                 wrapper.innerHTML = `<div class="alert-period"><i class="fas fa-calendar-check"></i> 임박 사무실이 없습니다.</div>`;
                 return;
@@ -1842,37 +1060,26 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             let html = '';
             if (twoMonths.length > 0) {
                 html += `<div class="alert-period"><i class="fas fa-exclamation-triangle" style="color: var(--accent-red);"></i> 2개월 이내 (${twoMonths.length}개소)</div>`;
-                twoMonths.forEach(o => {
-                    html += `<div class="alert-item critical" onclick="highlightAndShowDetails('${o.id}')" title="${o.지점명} 상세 보기" style="cursor:pointer;">
-                                <i class="fas fa-building"></i> ${o.지점명} (${o.남은일수}일)
-                            </div>`;
-                });
+                twoMonths.forEach(o => { html += `<div class="alert-item critical" onclick="highlightAndShowDetails('${o.id}')" title="${o.지점명} 상세 보기" style="cursor:pointer;"><i class="fas fa-building"></i> ${o.지점명} (${o.남은일수}일)</div>`; });
             }
             if (sixMonths.length > 0) {
                 html += `<div class="alert-period" style="margin-top: 10px;"><i class="fas fa-hourglass-half" style="color: var(--accent-yellow);"></i> 6개월 이내 (${sixMonths.length}개소)</div>`;
-                sixMonths.forEach(o => {
-                    html += `<div class="alert-item warning" onclick="highlightAndShowDetails('${o.id}')" title="${o.지점명} 상세 보기" style="cursor:pointer;">
-                                <i class="fas fa-building"></i> ${o.지점명} (${o.남은일수}일)
-                            </div>`;
-                });
+                sixMonths.forEach(o => { html += `<div class="alert-item warning" onclick="highlightAndShowDetails('${o.id}')" title="${o.지점명} 상세 보기" style="cursor:pointer;"><i class="fas fa-building"></i> ${o.지점명} (${o.남은일수}일)</div>`; });
             }
             wrapper.innerHTML = html;
         }
         
         function highlightAndShowDetails(officeId) {
             if (switchPage.currentPage !== 'overview') switchPage('overview', document.querySelector('.nav-item[onclick*="overview"]'));
-            
             setTimeout(() => { 
                 const targetOffice = allOfficeData.find(o => o.id === officeId);
                 if(!targetOffice) return;
-
                 document.getElementById('searchInput').value = targetOffice.지점명;
                 document.getElementById('statusFilter').value = '사용중';
-                document.getElementById('usageFilter').value = targetOffice.사용처 || '전체'; // Highlight related filters
-                document.getElementById('regionFilter').value = targetOffice.지역 || '전체'; // Highlight related filters
+                document.getElementById('usageFilter').value = targetOffice.사용처 || '전체';
+                document.getElementById('regionFilter').value = targetOffice.지역 || '전체';
                 document.getElementById('expiryFilter').value = 'all';
                 applyAllFilters();
-
                 setTimeout(() => {
                     const rowElement = document.getElementById(`row-${officeId}`);
                     if (rowElement) {
@@ -1901,7 +1108,6 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             const detailRow = document.getElementById(`detail-${id}`);
             const dropdown = document.getElementById(`dropdown-${id}`);
             if (!row || !detailRow || !dropdown) return;
-
             if (expandedOfficeId && expandedOfficeId !== id) {
                 const prevRow = document.getElementById(`row-${expandedOfficeId}`);
                 const prevDetail = document.getElementById(`detail-${expandedOfficeId}`);
@@ -1927,7 +1133,6 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             let html = '<div class="detail-grid">';
             html += '<div class="detail-section"><h4><i class="fas fa-info-circle"></i> 기본 정보</h4>';
             if (o.주소) html += `<div class="detail-item"><strong>주소:</strong><span>${o.주소}</span></div>`;
-            // Display 사용처 and 지역 in details as well
             if (o.사용처) html += `<div class="detail-item"><strong>사용처:</strong><span>${o.사용처}</span></div>`;
             if (o.지역) html += `<div class="detail-item"><strong>지역:</strong><span>${o.지역}</span></div>`;
             let areaPyeongText = '';
@@ -1978,14 +1183,11 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             if (clickedElement) clickedElement.classList.add('active');
             updatePageTitleAndBreadcrumb(page);
-
             const tableContainer = document.getElementById('officesTableContainer');
             const filtersContainer = document.querySelector('.filters-container');
             const statsSection = document.getElementById('statsSection');
             const filterSummaryCard = document.getElementById('filterSummaryCard');
-
             if (expandedOfficeId) toggleOfficeDetails(expandedOfficeId); 
-
             if (page === 'overview') {
                 filtersContainer.style.display = 'grid'; statsSection.style.display = 'none';
                 tableContainer.style.display = ''; 
@@ -2001,14 +1203,13 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
         }
         switchPage.currentPage = 'overview'; 
 
-        // ─────────── 통계 페이지 로직 (수정됨) ───────────
+        // ─────────── 통계 페이지 로직 ───────────
         function showStats() {
             if (allOfficeData.length === 0 && connectionData.length > 0) {
                 parseAndRenderOfficeData(connectionData);
             }
             if (allOfficeData.length === 0) {
                 showToast('통계 표시에 필요한 데이터가 없습니다.', 'warning'); 
-                // 모든 통계 필드를 '0' 또는 '-'로 초기화
                 ['metricActiveOffices', 'metricTotalRent', 'metricTotalDeposit', 'metricAvgRent'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.textContent = id.includes('Offices') ? '0 개소' : '0 원';
@@ -2017,27 +1218,19 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                 document.getElementById('usageStats').innerHTML = '<p>데이터가 없습니다.</p>';
                 return;
             }
-
             const activeData = allOfficeData.filter(o => o.현황 === '사용중');
             const activeCount = activeData.length;
             const totalRent = activeData.reduce((sum, o) => sum + (parseFloat(String(o.월세_원본 || '0').replace(/,/g, '')) || 0), 0);
             const totalDeposit = activeData.reduce((sum, o) => sum + (parseFloat(String(o.보증금_원본 || '0').replace(/,/g, '')) || 0), 0);
             const avgRent = activeCount > 0 ? totalRent / activeCount : 0;
-
-            // 1. 주요 지표 요약 카드 업데이트
             document.getElementById('metricActiveOffices').textContent = `${activeCount} 개소`;
             document.getElementById('metricTotalRent').textContent = `${totalRent.toLocaleString()} 원`;
             document.getElementById('metricTotalDeposit').textContent = `${totalDeposit.toLocaleString()} 원`;
             document.getElementById('metricAvgRent').textContent = `${Math.round(avgRent).toLocaleString()} 원`;
-            
-            // 2. 상세 분석 테이블 생성
             const regionStatsData = generateGroupedStats(activeData, '지역');
             renderStatsTable(regionStatsData, 'regionStats', '지역', ['지역', '사무실 수', '월세 총액', '보증금 총액', '평균 월세']);
-            
             const usageStatsData = generateGroupedStats(activeData, '사용처');
             renderStatsTable(usageStatsData, 'usageStats', '사용처', ['사용처', '사무실 수', '월세 총액', '보증금 총액', '평균 월세']);
-
-            // 3. 기본으로 첫번째 탭 활성화
             openStatTab(null, 'regionStats');
             const firstTab = document.querySelector('.tab-link');
             if(firstTab) firstTab.classList.add('active');
@@ -2054,29 +1247,25 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                 acc[key].totalDeposit += parseFloat(String(office.보증금_원본 || '0').replace(/,/g, '')) || 0;
                 return acc;
             }, {});
-
             return Object.entries(groups).map(([key, value]) => ({
                 groupName: key,
                 count: value.count,
                 totalRent: value.totalRent,
                 totalDeposit: value.totalDeposit,
                 avgRent: value.count > 0 ? value.totalRent / value.count : 0
-            })).sort((a, b) => b.totalRent - a.totalRent); // 월세 총액 기준으로 내림차순 정렬
+            })).sort((a, b) => b.totalRent - a.totalRent);
         }
         
         function renderStatsTable(data, containerId, groupKey, headers) {
             const container = document.getElementById(containerId);
             if (!container) return;
-
             if (data.length === 0) {
                 container.innerHTML = '<p>표시할 데이터가 없습니다.</p>';
                 return;
             }
-
             let tableHtml = '<table class="stats-detail-table"><thead><tr>';
             headers.forEach(header => tableHtml += `<th>${header}</th>`);
             tableHtml += '</tr></thead><tbody>';
-
             data.forEach(item => {
                 tableHtml += `<tr class="stats-summary-row" onclick="toggleGroupDetails(this, '${groupKey}', '${item.groupName.replace(/'/g, "\\'")}')">
                         <td>${item.groupName}</td>
@@ -2090,7 +1279,6 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                     </tr>
                 `;
             });
-
             tableHtml += '</tbody></table>';
             container.innerHTML = tableHtml;
         }
@@ -2098,8 +1286,6 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
         function toggleGroupDetails(rowElement, groupKey, groupName) {
             const detailRow = rowElement.nextElementSibling;
             const detailContent = detailRow.querySelector('.stats-detail-content');
-
-            // 이미 열려있는 행을 다시 클릭하면 닫기
             if (rowElement.classList.contains('expanded')) {
                 rowElement.classList.remove('expanded');
                 detailRow.style.display = 'none';
@@ -2107,46 +1293,26 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                 expandedStatRow = null;
                 return;
             }
-
-            // 다른 행이 열려있으면 먼저 닫기
             if (expandedStatRow) {
                 expandedStatRow.classList.remove('expanded');
                 const prevDetailRow = expandedStatRow.nextElementSibling;
                 prevDetailRow.style.display = 'none';
                 prevDetailRow.querySelector('.stats-detail-content').innerHTML = '';
             }
-
-            // 상세 정보 생성 및 표시
             const officesInGroup = allOfficeData.filter(o => o.현황 === '사용중' && o[groupKey] === groupName);
-            
             let subTableHtml = '<table class="stats-sub-table">';
             if (groupKey === '지역') {
                 subTableHtml += '<thead><tr><th>사용처</th><th>지점명 / 주소</th><th>보증금</th><th>월세</th></tr></thead><tbody>';
-                officesInGroup.forEach(o => {
-                    subTableHtml += `<tr>
-                        <td>${o.사용처 || '-'}</td>
-                        <td>${o.지점명}<br><small style="color:var(--text-secondary);">${o.주소 || ''}</small></td>
-                        <td>${o.보증금} 원</td>
-                        <td>${o.월세} 원</td>
-                    </tr>`;
-                });
-            } else { // groupKey === '사용처'
+                officesInGroup.forEach(o => { subTableHtml += `<tr><td>${o.사용처 || '-'}</td><td>${o.지점명}<br><small style="color:var(--text-secondary);">${o.주소 || ''}</small></td><td>${o.보증금} 원</td><td>${o.월세} 원</td></tr>`; });
+            } else {
                 subTableHtml += '<thead><tr><th>지역</th><th>지점명 / 주소</th><th>보증금</th><th>월세</th></tr></thead><tbody>';
-                officesInGroup.forEach(o => {
-                    subTableHtml += `<tr>
-                        <td>${o.지역 || '-'}</td>
-                        <td>${o.지점명}<br><small style="color:var(--text-secondary);">${o.주소 || ''}</small></td>
-                        <td>${o.보증금} 원</td>
-                        <td>${o.월세} 원</td>
-                    </tr>`;
-                });
+                officesInGroup.forEach(o => { subTableHtml += `<tr><td>${o.지역 || '-'}</td><td>${o.지점명}<br><small style="color:var(--text-secondary);">${o.주소 || ''}</small></td><td>${o.보증금} 원</td><td>${o.월세} 원</td></tr>`; });
             }
             subTableHtml += '</tbody></table>';
-
             detailContent.innerHTML = subTableHtml;
             rowElement.classList.add('expanded');
             detailRow.style.display = 'table-row';
-            expandedStatRow = rowElement; // 현재 열린 행으로 설정
+            expandedStatRow = rowElement;
         }
 
         function openStatTab(evt, tabName) {
@@ -2154,19 +1320,16 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             for (let i = 0; i < tabcontent.length; i++) {
                 tabcontent[i].style.display = "none";
             }
-
             const tablinks = document.getElementsByClassName("tab-link");
             for (let i = 0; i < tablinks.length; i++) {
                 tablinks[i].className = tablinks[i].className.replace(" active", "");
             }
-
             document.getElementById(tabName).style.display = "block";
             if (evt) {
                 evt.currentTarget.className += " active";
             }
-            expandedStatRow = null; // 탭 전환 시 열려있는 상세 정보 초기화
+            expandedStatRow = null;
         }
-
 
         // ─────────── 테이블 정렬 ───────────
         function sortTable(column) {
@@ -2176,7 +1339,6 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                 currentSortColumn = column; currentSortDirection = 'asc';
             }
             applyAllFilters(); 
-            
             const directionText = currentSortDirection === 'asc' ? '오름차순' : (currentSortDirection === 'desc' ? '내림차순' : '기본');
             if(currentSortDirection !== '') showToast(`${column} 기준 ${directionText} 정렬 완료`, 'info', 1500);
             else showToast(`${column} 기준 정렬 해제`, 'info', 1500);
@@ -2189,8 +1351,8 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                 allOfficeData.forEach(office => {
                     if (office.지점명) autocompleteData.push(String(office.지점명));
                     if (office.주소) autocompleteData.push(String(office.주소));
-                    if (office.사용처) autocompleteData.push(String(office.사용처)); // Add 사용처 to autocomplete
-                    if (office.지역) autocompleteData.push(String(office.지역));   // Add 지역 to autocomplete
+                    if (office.사용처) autocompleteData.push(String(office.사용처));
+                    if (office.지역) autocompleteData.push(String(office.지역));
                 });
                 autocompleteData = [...new Set(autocompleteData.filter(item => item.trim() !== ''))].sort((a,b) => a.localeCompare(b, 'ko'));
             }
@@ -2200,13 +1362,9 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             const dropdown = document.getElementById('autocompleteDropdown');
             const trimmedQuery = query.trim();
             if (!trimmedQuery) { hideAutocomplete(); return; }
-
             const lowercasedQuery = trimmedQuery.toLowerCase();
-            const matches = autocompleteData
-                .filter(item => item.toLowerCase().includes(lowercasedQuery))
-                .slice(0, 8); 
+            const matches = autocompleteData.filter(item => item.toLowerCase().includes(lowercasedQuery)).slice(0, 8); 
             if (matches.length === 0) { hideAutocomplete(); return; }
-            
             const escapedQueryForRegex = escapeRegExp(trimmedQuery);
             let html = '';
             matches.forEach((item, index) => {
@@ -2225,7 +1383,6 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             }
             const items = dropdown.querySelectorAll('.autocomplete-item');
             if (items.length === 0) return;
-
             if (e.key === 'ArrowDown') {
                 e.preventDefault(); selectedAutocompleteIndex = (selectedAutocompleteIndex + 1) % items.length;
                 updateAutocompleteSelection(items);
@@ -2297,8 +1454,8 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             const card = document.getElementById('filterSummaryCard');
             const isFiltered = document.getElementById('searchInput').value.trim() || 
                                document.getElementById('statusFilter').value !== '전체' || 
-                               document.getElementById('usageFilter').value !== '전체' ||   // New
-                               document.getElementById('regionFilter').value !== '전체' ||  // New
+                               document.getElementById('usageFilter').value !== '전체' ||
+                               document.getElementById('regionFilter').value !== '전체' ||
                                document.getElementById('expiryFilter').value !== 'all';
 
             if (document.getElementById('statsSection').style.display === 'none') {
@@ -2347,39 +1504,32 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             else { themeIcon.className = 'fas fa-moon'; themeText.textContent = '다크모드'; }
         }
 
-        
         // ─────────── 유틸리티 함수 ───────────
         function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
         function parseDateValue(val) {
             if (val === null || val === undefined || String(val).trim() === '') return new Date(NaN);
-            
             const s = String(val).trim();
-            
             const parts = s.match(/(\d{4})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/);
             if (parts) {
                 const year = parseInt(parts[1], 10);
                 const month = parseInt(parts[2], 10) - 1; 
                 const day = parseInt(parts[3], 10);
                 const date = new Date(year, month, day);
-                
                 if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
                     return date;
                 }
             }
-            
             const standardDate = new Date(s);
             if (!isNaN(standardDate.getTime())) {
                 return standardDate;
             }
-            
             const numVal = parseFloat(s);
             if (!isNaN(numVal) && numVal > 0 && numVal < 2958466) {
                 const excelEpoch = new Date(1899, 11, 30);
                 const dateMillis = excelEpoch.getTime() + numVal * 24 * 60 * 60 * 1000;
                 return new Date(dateMillis);
             }
-            
             return new Date(NaN);
         }
 
@@ -2407,58 +1557,19 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             if(overlay) overlay.classList.toggle('active', isActive);
         }
     </script>
-    <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./service-worker.js', { scope: './' })
-        .then(registration => {
-          console.log('서비스 워커가 성공적으로 등록되었습니다. 적용 범위:', registration.scope);
-        })
-        .catch(error => {
-          console.log('서비스 워커 등록에 최종 실패했습니다:', error);
-        });
-    });
-  }
-        // PWA 설치 버튼 로직
-let deferredPrompt;
-const installPwaBtn = document.getElementById('installPwaBtn');
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  // 브라우저의 기본 설치 배너 표시를 막습니다.
-  e.preventDefault();
-  // 나중에 사용하기 위해 이벤트를 저장합니다.
-  deferredPrompt = e;
-  // 우리가 만든 설치 버튼을 화면에 표시합니다.
-  if (installPwaBtn) {
-    installPwaBtn.style.display = 'flex';
-  }
-});
-
-if (installPwaBtn) {
-    installPwaBtn.addEventListener('click', async () => {
-        if (deferredPrompt) {
-            // 저장해둔 이벤트를 사용하여 설치 프롬프트를 표시합니다.
-            deferredPrompt.prompt();
-            // 사용자의 선택 결과를 기다립니다.
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`사용자 선택: ${outcome}`);
-            // 프롬프트는 한 번만 사용할 수 있으므로, 변수를 초기화합니다.
-            deferredPrompt = null;
-            // 버튼을 다시 숨깁니다.
-            installPwaBtn.style.display = 'none';
-        }
-    });
-}
-
-window.addEventListener('appinstalled', () => {
-    // 앱이 설치되면 변수를 초기화하고 버튼을 숨깁니다.
-    deferredPrompt = null;
-    if (installPwaBtn) {
-        installPwaBtn.style.display = 'none';
-    }
-    console.log('PWA가 성공적으로 설치되었습니다.');
-});
-</script>
     
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+            .then(registration => {
+              console.log('서비스 워커가 성공적으로 등록되었습니다. 적용 범위:', registration.scope);
+            })
+            .catch(error => {
+              console.log('서비스 워커 등록에 최종 실패했습니다:', error);
+            });
+        });
+      }
+    </script>
 </body>
 </html>
