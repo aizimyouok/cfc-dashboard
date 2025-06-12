@@ -10,8 +10,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="CFC 현황판">
+    <meta name="description" content="CFC 사무실 임대 현황 관리 시스템">
     
-    <!-- 아이콘 (인라인으로 처리) -->
+    <!-- PWA Manifest 링크 -->
+    <link rel="manifest" href="./manifest.json">
+    
+    <!-- 아이콘 -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%233498db'/><text x='50' y='55' font-size='30' fill='white' text-anchor='middle' font-family='Arial'>CFC</text></svg>">
     
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -104,12 +108,19 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .main-title {
             font-size: 1.7rem;
             font-weight: 700;
             color: #343a40;
+        }
+        
+        .header-buttons {
+            display: flex;
+            gap: 10px;
         }
         
         .install-button {
@@ -119,6 +130,23 @@
             padding: 10px 15px;
             border-radius: 6px;
             cursor: pointer;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s ease;
+        }
+        
+        .install-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .pwa-status {
+            background: #28a745;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
             font-weight: 600;
             display: none;
         }
@@ -141,6 +169,12 @@
             background: #e6f5e9;
             border: 1px solid #c3e6cb;
             color: #155724;
+        }
+        
+        .notice-info {
+            background: #e0f3f8;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
         }
         
         .filters-container {
@@ -170,6 +204,13 @@
             background: #fafafa;
         }
         
+        .setup-input:focus {
+            outline: none;
+            border-color: #3498db;
+            background: white;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
         .data-table-container {
             background: #ffffff;
             border-radius: 8px;
@@ -194,10 +235,18 @@
             background-color: #f8f9fa;
             font-weight: 700;
             color: #343a40;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .data-table tbody tr {
+            transition: all 0.2s ease;
         }
         
         .data-table tbody tr:hover {
             background-color: #e9ecef;
+            transform: translateY(-1px);
         }
         
         .status-badge {
@@ -222,6 +271,8 @@
             .sidebar { transform: translateX(-100%); }
             .main-content { margin-left: 0; }
             .data-table { min-width: 600px; }
+            .main-header { flex-direction: column; align-items: flex-start; }
+            .header-buttons { align-self: stretch; }
         }
     </style>
 </head>
@@ -245,14 +296,17 @@
         <main class="main-content">
             <header class="main-header">
                 <h1 class="main-title">CFC 사무실 임대 현황</h1>
-                <button class="install-button" id="installButton">
-                    <i class="fas fa-download"></i> 앱 설치
-                </button>
+                <div class="header-buttons">
+                    <div class="pwa-status" id="pwaStatus">📱 PWA 준비 완료</div>
+                    <button class="install-button" id="installButton">
+                        <i class="fas fa-download"></i> 앱 설치
+                    </button>
+                </div>
             </header>
 
             <div class="content-area">
-                <div class="notice notice-success" id="statusNotice">
-                    ✅ <strong>테스트 모드!</strong> PWA 기능을 확인해보세요.
+                <div class="notice notice-info" id="statusNotice">
+                    🔄 <strong>PWA 초기화 중...</strong> 잠시만 기다려주세요.
                 </div>
 
                 <div class="filters-container">
@@ -311,6 +365,30 @@
     </div>
 
     <script>
+        // Service Worker 등록
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(function(registration) {
+                        console.log('✅ Service Worker 등록 성공:', registration.scope);
+                        updatePWAStatus('Service Worker 활성화됨');
+                    })
+                    .catch(function(err) {
+                        console.log('❌ Service Worker 등록 실패:', err);
+                        updatePWAStatus('Service Worker 실패');
+                    });
+            });
+        }
+
+        // PWA 상태 업데이트
+        function updatePWAStatus(message) {
+            const statusEl = document.getElementById('pwaStatus');
+            if (statusEl) {
+                statusEl.textContent = `📱 ${message}`;
+                statusEl.style.display = 'block';
+            }
+        }
+
         // 테스트 데이터
         const testData = [
             {
@@ -377,6 +455,45 @@
 
         let filteredData = [...testData];
 
+        // PWA 설치 기능
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('📱 PWA 설치 프롬프트 준비됨');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            const installBtn = document.getElementById('installButton');
+            if (installBtn) {
+                installBtn.style.display = 'flex';
+            }
+            updatePWAStatus('설치 준비 완료');
+        });
+
+        document.getElementById('installButton').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('✅ PWA 설치 완료!');
+                    updatePWAStatus('설치 완료');
+                } else {
+                    console.log('❌ PWA 설치 취소됨');
+                    updatePWAStatus('설치 취소됨');
+                }
+                deferredPrompt = null;
+                document.getElementById('installButton').style.display = 'none';
+            } else {
+                alert('설치할 수 없습니다. 브라우저에서 수동으로 설치해주세요.');
+            }
+        });
+
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('🎉 PWA 앱이 설치되었습니다!');
+            updatePWAStatus('앱 설치됨');
+            document.getElementById('installButton').style.display = 'none';
+        });
+
         // 데이터 렌더링
         function renderTable(data) {
             const tbody = document.getElementById('dataTableBody');
@@ -434,44 +551,35 @@
             renderTable(filtered);
         }
 
-        // PWA 설치 기능
-        let deferredPrompt;
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installButton').style.display = 'inline-flex';
-        });
-
-        document.getElementById('installButton').addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    console.log('PWA 설치 완료!');
-                }
-                deferredPrompt = null;
-                document.getElementById('installButton').style.display = 'none';
-            }
-        });
-
         // 이벤트 리스너
         document.getElementById('statusFilter').addEventListener('change', applyFilters);
         document.getElementById('usageFilter').addEventListener('change', applyFilters);
         document.getElementById('regionFilter').addEventListener('change', applyFilters);
         document.getElementById('searchInput').addEventListener('input', applyFilters);
 
-        // 초기 렌더링
-        renderTable(testData);
-
-        // 알림 자동 숨김
-        setTimeout(() => {
+        // 초기화
+        function initializeApp() {
             const notice = document.getElementById('statusNotice');
-            if (notice) notice.style.display = 'none';
-        }, 5000);
+            if (notice) {
+                notice.className = 'notice notice-success';
+                notice.innerHTML = '✅ <strong>PWA 앱 준비 완료!</strong> 테스트 데이터로 모든 기능을 확인해보세요.';
+                
+                setTimeout(() => {
+                    notice.style.display = 'none';
+                }, 5000);
+            }
 
-        console.log('🎉 PWA 테스트 버전이 성공적으로 로드되었습니다!');
-        console.log('📱 브라우저 주소창 옆의 설치 아이콘을 확인해보세요!');
+            renderTable(testData);
+            console.log('🎉 CFC 현황판 PWA가 성공적으로 로드되었습니다!');
+            console.log('📱 설치 아이콘이 나타날 때까지 잠시 기다려주세요.');
+        }
+
+        // 페이지 로드 완료 후 초기화
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
     </script>
 </body>
 </html>
