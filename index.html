@@ -1,32 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2c3e50">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CFC 사무실 임대 현황 대시보드</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2c3e50">
-
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-
-    
-    <!-- PWA 메타 태그들 추가 -->
-    <meta name="theme-color" content="#3498db">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="CFC 현황판">
-    <meta name="msapplication-TileColor" content="#2c3e50">
-    <meta name="description" content="CFC 사무실 임대 현황 관리 시스템">
-    
-    <!-- PWA Manifest 링크 -->
-    <link rel="manifest" href="./manifest.json">
-    
-    <!-- 애플 아이콘들 -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%233498db'/><text x='50' y='55' font-size='30' fill='white' text-anchor='middle' font-family='Arial'>CFC</text></svg>">
-    
-    <!-- favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%233498db'/><text x='50' y='55' font-size='30' fill='white' text-anchor='middle' font-family='Arial'>CFC</text></svg>">
-    
+    <title>CFC 사무실 현황 대시보드</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -68,14 +47,6 @@
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
-        }
-
-        /* PWA 모드 스타일 추가 */
-        .pwa-mode .main-header {
-            padding-top: calc(env(safe-area-inset-top) + 18px);
-        }
-        .pwa-mode .sidebar {
-            padding-top: env(safe-area-inset-top);
         }
 
         .app-container {
@@ -287,26 +258,6 @@
             color: var(--text-secondary);
             font-size: 0.9rem;
             font-weight: 400;
-        }
-
-        /* PWA 설치 버튼 스타일 */
-        .install-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-left: 10px;
-            transition: all 0.3s ease;
-            display: none;
-        }
-        
-        .install-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .content-area {
@@ -1053,9 +1004,6 @@
                     <i class="fas fa-moon" id="themeIcon"></i>
                     <span id="themeText">다크모드</span>
                 </button>
-                <button class="install-button" id="installButton" onclick="installApp()">
-                    <i class="fas fa-download"></i> 앱 설치
-                </button>
             </header>
 
             <div class="content-area">
@@ -1273,105 +1221,7 @@
         </div>
 
     <script>
-        // ─────────── PWA 관련 코드 추가 ───────────
-        let deferredPrompt;
-        
-        // 서비스 워커 등록
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(function(registration) {
-                        console.log('ServiceWorker 등록 성공:', registration.scope);
-                        
-                        // 업데이트 확인
-                        registration.addEventListener('updatefound', function() {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', function() {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    showToast('새 버전이 준비되었습니다. 새로고침하세요.', 'info', 10000);
-                                }
-                            });
-                        });
-                    })
-                    .catch(function(err) {
-                        console.log('ServiceWorker 등록 실패:', err);
-                    });
-            });
-        }
-
-        // PWA 설치 프롬프트 처리
-        window.addEventListener('beforeinstallprompt', function(e) {
-            console.log('설치 프롬프트 준비됨');
-            e.preventDefault();
-            deferredPrompt = e;
-            
-            // 설치 버튼 표시
-            const installButton = document.getElementById('installButton');
-            if (installButton) {
-                installButton.style.display = 'inline-flex';
-            }
-        });
-
-        function installApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(function(choiceResult) {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('사용자가 앱 설치를 승인했습니다');
-                        showToast('앱이 설치되었습니다!', 'success', 3000);
-                    } else {
-                        console.log('사용자가 앱 설치를 거부했습니다');
-                    }
-                    deferredPrompt = null;
-                    const installButton = document.getElementById('installButton');
-                    if (installButton) {
-                        installButton.style.display = 'none';
-                    }
-                });
-            }
-        }
-
-        // 앱이 설치되었을 때
-        window.addEventListener('appinstalled', function(evt) {
-            console.log('앱 설치 완료', evt);
-            showToast('CFC 현황판 앱이 성공적으로 설치되었습니다!', 'success', 5000);
-            const installButton = document.getElementById('installButton');
-            if (installButton) {
-                installButton.style.display = 'none';
-            }
-        });
-
-        // 온라인/오프라인 상태 처리
-        function updateOnlineStatus() {
-            const notice = document.getElementById('statusNotice');
-            if (!navigator.onLine) {
-                if (notice) {
-                    notice.className = 'notice notice-warning';
-                    notice.style.display = 'block';
-                    notice.innerHTML = '📴 <strong>오프라인 모드:</strong> 인터넷 연결을 확인해주세요. 캐시된 데이터로 작업할 수 있습니다.';
-                }
-            }
-        }
-
-        window.addEventListener('online', function() {
-            showToast('인터넷 연결이 복구되었습니다', 'success', 3000);
-            if (window.allOfficeData && window.allOfficeData.length === 0) {
-                connectAppsScript();
-            }
-        });
-
-        window.addEventListener('offline', function() {
-            showToast('오프라인 상태입니다', 'warning', 5000);
-            updateOnlineStatus();
-        });
-
-        // PWA인지 확인하여 UI 조정
-        if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
-            console.log('PWA 모드에서 실행 중');
-            document.body.classList.add('pwa-mode');
-        }
-
-        // ─────────── 기존 JavaScript 코드 (변경 없음) ───────────
+        // ─────────── 전역 변수 ───────────
         let connectionData = [];
         let allOfficeData = [];
         let filteredOfficeData = [];
@@ -1435,7 +1285,6 @@
             updatePageTitleAndBreadcrumb('overview');
             connectAppsScript();
             setupColumnToggles();
-            updateOnlineStatus(); // 초기 상태 확인
         });
 
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcujFRpQbOeSuaa7YTIr6AEsLt4ShLLJCq8pSb1jngQUKJfogA3h3emm_V3EOnVfygFg/exec';
@@ -1824,7 +1673,7 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             }
         }
 
-        // ─────────── 나머지 모든 함수들 (기존 코드와 동일) ───────────
+        // ─────────── 기타 UI 업데이트 함수들 ───────────
         function updateSidebarAlert(dataToProcess) {
             const wrapper = document.getElementById('sidebarAlertBody');
             if (!wrapper) return;
@@ -1866,8 +1715,8 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
 
                 document.getElementById('searchInput').value = targetOffice.지점명;
                 document.getElementById('statusFilter').value = '사용중';
-                document.getElementById('usageFilter').value = targetOffice.사용처 || '전체';
-                document.getElementById('regionFilter').value = targetOffice.지역 || '전체';
+                document.getElementById('usageFilter').value = targetOffice.사용처 || '전체'; // Highlight related filters
+                document.getElementById('regionFilter').value = targetOffice.지역 || '전체'; // Highlight related filters
                 document.getElementById('expiryFilter').value = 'all';
                 applyAllFilters();
 
@@ -1925,6 +1774,7 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             let html = '<div class="detail-grid">';
             html += '<div class="detail-section"><h4><i class="fas fa-info-circle"></i> 기본 정보</h4>';
             if (o.주소) html += `<div class="detail-item"><strong>주소:</strong><span>${o.주소}</span></div>`;
+            // Display 사용처 and 지역 in details as well
             if (o.사용처) html += `<div class="detail-item"><strong>사용처:</strong><span>${o.사용처}</span></div>`;
             if (o.지역) html += `<div class="detail-item"><strong>지역:</strong><span>${o.지역}</span></div>`;
             let areaPyeongText = '';
@@ -1998,13 +1848,14 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
         }
         switchPage.currentPage = 'overview'; 
 
-        // ─────────── 통계 페이지 로직 ───────────
+        // ─────────── 통계 페이지 로직 (수정됨) ───────────
         function showStats() {
             if (allOfficeData.length === 0 && connectionData.length > 0) {
                 parseAndRenderOfficeData(connectionData);
             }
             if (allOfficeData.length === 0) {
                 showToast('통계 표시에 필요한 데이터가 없습니다.', 'warning'); 
+                // 모든 통계 필드를 '0' 또는 '-'로 초기화
                 ['metricActiveOffices', 'metricTotalRent', 'metricTotalDeposit', 'metricAvgRent'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.textContent = id.includes('Offices') ? '0 개소' : '0 원';
@@ -2020,17 +1871,20 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             const totalDeposit = activeData.reduce((sum, o) => sum + (parseFloat(String(o.보증금_원본 || '0').replace(/,/g, '')) || 0), 0);
             const avgRent = activeCount > 0 ? totalRent / activeCount : 0;
 
+            // 1. 주요 지표 요약 카드 업데이트
             document.getElementById('metricActiveOffices').textContent = `${activeCount} 개소`;
             document.getElementById('metricTotalRent').textContent = `${totalRent.toLocaleString()} 원`;
             document.getElementById('metricTotalDeposit').textContent = `${totalDeposit.toLocaleString()} 원`;
             document.getElementById('metricAvgRent').textContent = `${Math.round(avgRent).toLocaleString()} 원`;
             
+            // 2. 상세 분석 테이블 생성
             const regionStatsData = generateGroupedStats(activeData, '지역');
             renderStatsTable(regionStatsData, 'regionStats', '지역', ['지역', '사무실 수', '월세 총액', '보증금 총액', '평균 월세']);
             
             const usageStatsData = generateGroupedStats(activeData, '사용처');
             renderStatsTable(usageStatsData, 'usageStats', '사용처', ['사용처', '사무실 수', '월세 총액', '보증금 총액', '평균 월세']);
 
+            // 3. 기본으로 첫번째 탭 활성화
             openStatTab(null, 'regionStats');
             const firstTab = document.querySelector('.tab-link');
             if(firstTab) firstTab.classList.add('active');
@@ -2054,7 +1908,7 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                 totalRent: value.totalRent,
                 totalDeposit: value.totalDeposit,
                 avgRent: value.count > 0 ? value.totalRent / value.count : 0
-            })).sort((a, b) => b.totalRent - a.totalRent);
+            })).sort((a, b) => b.totalRent - a.totalRent); // 월세 총액 기준으로 내림차순 정렬
         }
         
         function renderStatsTable(data, containerId, groupKey, headers) {
@@ -2092,6 +1946,7 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             const detailRow = rowElement.nextElementSibling;
             const detailContent = detailRow.querySelector('.stats-detail-content');
 
+            // 이미 열려있는 행을 다시 클릭하면 닫기
             if (rowElement.classList.contains('expanded')) {
                 rowElement.classList.remove('expanded');
                 detailRow.style.display = 'none';
@@ -2100,6 +1955,7 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                 return;
             }
 
+            // 다른 행이 열려있으면 먼저 닫기
             if (expandedStatRow) {
                 expandedStatRow.classList.remove('expanded');
                 const prevDetailRow = expandedStatRow.nextElementSibling;
@@ -2107,6 +1963,7 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                 prevDetailRow.querySelector('.stats-detail-content').innerHTML = '';
             }
 
+            // 상세 정보 생성 및 표시
             const officesInGroup = allOfficeData.filter(o => o.현황 === '사용중' && o[groupKey] === groupName);
             
             let subTableHtml = '<table class="stats-sub-table">';
@@ -2120,7 +1977,7 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                         <td>${o.월세} 원</td>
                     </tr>`;
                 });
-            } else {
+            } else { // groupKey === '사용처'
                 subTableHtml += '<thead><tr><th>지역</th><th>지점명 / 주소</th><th>보증금</th><th>월세</th></tr></thead><tbody>';
                 officesInGroup.forEach(o => {
                     subTableHtml += `<tr>
@@ -2136,7 +1993,7 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             detailContent.innerHTML = subTableHtml;
             rowElement.classList.add('expanded');
             detailRow.style.display = 'table-row';
-            expandedStatRow = rowElement;
+            expandedStatRow = rowElement; // 현재 열린 행으로 설정
         }
 
         function openStatTab(evt, tabName) {
@@ -2154,8 +2011,9 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             if (evt) {
                 evt.currentTarget.className += " active";
             }
-            expandedStatRow = null;
+            expandedStatRow = null; // 탭 전환 시 열려있는 상세 정보 초기화
         }
+
 
         // ─────────── 테이블 정렬 ───────────
         function sortTable(column) {
@@ -2178,8 +2036,8 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
                 allOfficeData.forEach(office => {
                     if (office.지점명) autocompleteData.push(String(office.지점명));
                     if (office.주소) autocompleteData.push(String(office.주소));
-                    if (office.사용처) autocompleteData.push(String(office.사용처));
-                    if (office.지역) autocompleteData.push(String(office.지역));
+                    if (office.사용처) autocompleteData.push(String(office.사용처)); // Add 사용처 to autocomplete
+                    if (office.지역) autocompleteData.push(String(office.지역));   // Add 지역 to autocomplete
                 });
                 autocompleteData = [...new Set(autocompleteData.filter(item => item.trim() !== ''))].sort((a,b) => a.localeCompare(b, 'ko'));
             }
@@ -2286,8 +2144,8 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
             const card = document.getElementById('filterSummaryCard');
             const isFiltered = document.getElementById('searchInput').value.trim() || 
                                document.getElementById('statusFilter').value !== '전체' || 
-                               document.getElementById('usageFilter').value !== '전체' ||
-                               document.getElementById('regionFilter').value !== '전체' ||
+                               document.getElementById('usageFilter').value !== '전체' ||   // New
+                               document.getElementById('regionFilter').value !== '전체' ||  // New
                                document.getElementById('expiryFilter').value !== 'all';
 
             if (document.getElementById('statsSection').style.display === 'none') {
@@ -2337,8 +2195,7 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
         }
 
         // ─────────── 유틸리티 함수 ───────────
-        function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\                let headerHtml = '<tr>';
-if (visibleColumns['현황'])'); }
+        function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
         function parseDateValue(val) {
             if (val === null || val === undefined || String(val).trim() === '') return new Date(NaN);
@@ -2397,17 +2254,17 @@ if (visibleColumns['현황'])'); }
         }
     </script>
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
-            .then(registration => {
-              console.log('서비스 워커가 성공적으로 등록되었습니다.', registration);
-            })
-            .catch(error => {
-              console.log('서비스 워커 등록에 실패했습니다:', error);
-            });
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.service-worker.register('/service-worker.js')
+        .then(registration => {
+          console.log('서비스 워커가 성공적으로 등록되었습니다.', registration);
+        })
+        .catch(error => {
+          console.log('서비스 워커 등록에 실패했습니다:', error);
         });
-      }
-    </script>
+    });
+  }
+</script>
 </body>
 </html>
