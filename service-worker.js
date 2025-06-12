@@ -1,5 +1,5 @@
 // 캐시 이름 정의 (버전 관리를 위해 v1, v2 와 같이 지정)
-const CACHE_NAME = 'cfc-dashboard-cache-v1';
+const CACHE_NAME = 'cfc-dashboard-cache-v2';
 
 // 오프라인 상태일 때 표시하기 위해 캐싱할 파일 목록
 // index.html에서 사용하는 외부 라이브러리들을 포함합니다.
