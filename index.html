@@ -2256,7 +2256,7 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
     <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.service-worker.register('/service-worker.js')
+      navigator.serviceWorker.register('/cfc-dashboard/service-worker.js')
         .then(registration => {
           console.log('서비스 워커가 성공적으로 등록되었습니다.', registration);
         })
