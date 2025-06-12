@@ -177,6 +177,18 @@
             color: #0c5460;
         }
         
+        .notice-warning {
+            background: #fff8e1;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        
+        .notice-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
         .filters-container {
             background: #ffffff;
             border: 1px solid #e9ecef;
@@ -267,6 +279,62 @@
             color: #8c2f2f;
         }
         
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .config-section {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .config-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #343a40;
+        }
+        
+        .url-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        
+        .test-button {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        .test-button:hover {
+            background: #138496;
+        }
+        
         @media (max-width: 1040px) {
             .sidebar { transform: translateX(-100%); }
             .main-content { margin-left: 0; }
@@ -306,7 +374,21 @@
 
             <div class="content-area">
                 <div class="notice notice-info" id="statusNotice">
-                    🔄 <strong>PWA 초기화 중...</strong> 잠시만 기다려주세요.
+                    <div class="loading-spinner"></div>
+                    <strong>연결 중...</strong> Apps Script에서 데이터를 불러오는 중입니다.
+                </div>
+
+                <div class="config-section" id="configSection" style="display: none;">
+                    <div class="config-title">
+                        <i class="fas fa-cog"></i> Apps Script 설정
+                    </div>
+                    <input type="text" id="appsScriptUrl" class="url-input" 
+                           placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+                    <div>
+                        <button class="test-button" onclick="testConnection()">연결 테스트</button>
+                        <button class="test-button" onclick="saveAndConnect()">저장 및 연결</button>
+                        <button class="test-button" onclick="useTestData()" style="background: #6c757d;">테스트 데이터 사용</button>
+                    </div>
                 </div>
 
                 <div class="filters-container">
@@ -322,16 +404,12 @@
                         <label for="usageFilter">사용처 선택:</label>
                         <select id="usageFilter" class="setup-input">
                             <option value="전체">전체</option>
-                            <option value="CFC">CFC</option>
                         </select>
                     </div>
                     <div>
                         <label for="regionFilter">지역 선택:</label>
                         <select id="regionFilter" class="setup-input">
                             <option value="전체">전체</option>
-                            <option value="서울">서울</option>
-                            <option value="부산">부산</option>
-                            <option value="대구">대구</option>
                         </select>
                     </div>
                     <div>
@@ -356,7 +434,12 @@
                             </tr>
                         </thead>
                         <tbody id="dataTableBody">
-                            <!-- 데이터가 여기에 들어갑니다 -->
+                            <tr>
+                                <td colspan="9" style="text-align: center; padding: 40px;">
+                                    <div class="loading-spinner"></div>
+                                    데이터를 불러오는 중입니다...
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -365,7 +448,14 @@
     </div>
 
     <script>
-        // Service Worker 등록
+        // ========== 전역 변수 ==========
+        let allOfficeData = [];
+        let filteredData = [];
+        
+        // Apps Script URL (기본값)
+        let APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcujFRpQbOeSuaa7YTIr6AEsLt4ShLLJCq8pSb1jngQUKJfogA3h3emm_V3EOnVfygFg/exec';
+
+        // ========== Service Worker 등록 ==========
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('./sw.js')
@@ -380,7 +470,7 @@
             });
         }
 
-        // PWA 상태 업데이트
+        // ========== PWA 기능 ==========
         function updatePWAStatus(message) {
             const statusEl = document.getElementById('pwaStatus');
             if (statusEl) {
@@ -389,73 +479,6 @@
             }
         }
 
-        // 테스트 데이터
-        const testData = [
-            {
-                현황: '사용중',
-                사용처: 'CFC',
-                지역: '서울',
-                지점명: '강남점',
-                주소: '서울시 강남구 테헤란로 123',
-                계약일: '2023-01-01',
-                만료일: '2024-12-31',
-                보증금: '50,000,000',
-                월세: '3,000,000',
-                남은일수: 365
-            },
-            {
-                현황: '사용중',
-                사용처: 'CFC',
-                지역: '서울',
-                지점명: '홍대점',
-                주소: '서울시 마포구 홍익로 456',
-                계약일: '2023-06-01',
-                만료일: '2024-05-31',
-                보증금: '30,000,000',
-                월세: '2,500,000',
-                남은일수: 180
-            },
-            {
-                현황: '퇴거',
-                사용처: 'CFC',
-                지역: '부산',
-                지점명: '부산점',
-                주소: '부산시 해운대구 해운대로 789',
-                계약일: '2022-01-01',
-                만료일: '2023-12-31',
-                보증금: '40,000,000',
-                월세: '2,800,000',
-                남은일수: -30
-            },
-            {
-                현황: '사용중',
-                사용처: 'CFC',
-                지역: '대구',
-                지점명: '대구점',
-                주소: '대구시 중구 중앙대로 101',
-                계약일: '2023-03-01',
-                만료일: '2025-02-28',
-                보증금: '35,000,000',
-                월세: '2,200,000',
-                남은일수: 500
-            },
-            {
-                현황: '사용중',
-                사용처: 'CFC',
-                지역: '서울',
-                지점명: '임박점',
-                주소: '서울시 송파구 올림픽로 202',
-                계약일: '2023-01-01',
-                만료일: '2025-01-15',
-                보증금: '60,000,000',
-                월세: '4,000,000',
-                남은일수: 30
-            }
-        ];
-
-        let filteredData = [...testData];
-
-        // PWA 설치 기능
         let deferredPrompt;
 
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -479,12 +502,9 @@
                     updatePWAStatus('설치 완료');
                 } else {
                     console.log('❌ PWA 설치 취소됨');
-                    updatePWAStatus('설치 취소됨');
                 }
                 deferredPrompt = null;
                 document.getElementById('installButton').style.display = 'none';
-            } else {
-                alert('설치할 수 없습니다. 브라우저에서 수동으로 설치해주세요.');
             }
         });
 
@@ -494,55 +514,297 @@
             document.getElementById('installButton').style.display = 'none';
         });
 
-        // 데이터 렌더링
+        // ========== 데이터 연결 ==========
+        async function connectAppsScript(customUrl = null) {
+            const url = customUrl || APPS_SCRIPT_URL;
+            const notice = document.getElementById('statusNotice');
+            
+            // 로딩 상태 표시
+            showNotice('info', '<div class="loading-spinner"></div><strong>연결 중...</strong> Apps Script에서 데이터를 불러오는 중입니다.');
+            
+            try {
+                console.log('🔄 Apps Script 연결 시도:', url);
+                
+                const response = await fetch(`${url}?sheet=임대현황&t=${Date.now()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('📥 Apps Script 응답:', result);
+
+                // 응답 데이터 처리
+                let data;
+                if (result && result.status === 'success' && Array.isArray(result.data)) {
+                    data = result.data;
+                } else if (Array.isArray(result)) {
+                    data = result;
+                } else {
+                    throw new Error('예상치 못한 응답 형식: ' + JSON.stringify(result));
+                }
+
+                // 데이터 파싱 및 렌더링
+                const parsedData = parseOfficeData(data);
+                if (parsedData.length === 0) {
+                    throw new Error('유효한 데이터가 없습니다. 스프레드시트의 헤더와 데이터를 확인해주세요.');
+                }
+
+                allOfficeData = parsedData;
+                populateFilterOptions();
+                applyFilters();
+                
+                showNotice('success', '✅ <strong>연결 성공!</strong> ' + parsedData.length + '개의 사무실 데이터를 불러왔습니다.');
+                setTimeout(() => hideNotice(), 3000);
+
+            } catch (error) {
+                console.error('❌ Apps Script 연결 실패:', error);
+                handleConnectionError(error.message);
+            }
+        }
+
+        function handleConnectionError(errorMessage) {
+            showNotice('error', `❌ <strong>연결 실패:</strong> ${errorMessage}`);
+            
+            // 설정 섹션 표시
+            document.getElementById('configSection').style.display = 'block';
+            document.getElementById('appsScriptUrl').value = APPS_SCRIPT_URL;
+            
+            console.log('💡 해결 방법:');
+            console.log('1. Apps Script URL이 올바른지 확인');
+            console.log('2. 스프레드시트가 공개되어 있는지 확인');
+            console.log('3. Apps Script 배포 설정 확인');
+        }
+
+        // ========== 데이터 파싱 ==========
+        function parseOfficeData(rawData) {
+            if (!rawData || rawData.length < 1) {
+                return [];
+            }
+
+            // 헤더 행 찾기
+            let headerIdx = -1;
+            for (let i = 0; i < Math.min(10, rawData.length); i++) {
+                const row = rawData[i];
+                if (Array.isArray(row) && row.some(cell => cell && String(cell).trim() === '지점명')) {
+                    headerIdx = i;
+                    break;
+                }
+            }
+
+            if (headerIdx < 0) {
+                throw new Error('스프레드시트에서 "지점명" 헤더를 찾을 수 없습니다.');
+            }
+
+            const headers = rawData[headerIdx].map(h => h ? String(h).trim() : '');
+            const parsedData = [];
+
+            for (let i = headerIdx + 1; i < rawData.length; i++) {
+                const row = rawData[i];
+                const branchNameIndex = headers.indexOf('지점명');
+                
+                if (!Array.isArray(row) || !row[branchNameIndex] || String(row[branchNameIndex]).trim() === '') {
+                    continue;
+                }
+
+                const office = { id: `office_${i}` };
+                
+                // 헤더에 맞춰 데이터 매핑
+                headers.forEach((header, index) => {
+                    if (header) {
+                        office[header] = (row[index] !== undefined && row[index] !== null) ? String(row[index]).trim() : '';
+                    }
+                });
+
+                // 필수 필드 처리
+                office.지점명 = String(office['지점명'] || '');
+                office.현황 = String(office['현황'] || '');
+                office.주소 = String(office['주소'] || '');
+                office.사용처 = String(office['사용처'] || '');
+                office.지역 = String(office['지역'] || '');
+
+                // 날짜 처리
+                office.계약일 = formatDate(office['계약일']);
+                office.만료일 = formatDate(office['만료일']);
+
+                // 금액 처리
+                office.월세 = formatNumber(office['월세']);
+                office.보증금 = formatNumber(office['보증금']);
+
+                // 남은 일수 계산
+                if (office['만료일']) {
+                    const expiryDate = parseDate(office['만료일']);
+                    if (expiryDate) {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        expiryDate.setHours(0, 0, 0, 0);
+                        office.남은일수 = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                    } else {
+                        office.남은일수 = null;
+                    }
+                } else {
+                    office.남은일수 = null;
+                }
+
+                parsedData.push(office);
+            }
+
+            return parsedData;
+        }
+
+        // ========== 유틸리티 함수 ==========
+        function parseDate(dateString) {
+            if (!dateString) return null;
+            
+            const str = String(dateString).trim();
+            
+            // YYYY-MM-DD 형식
+            const parts = str.match(/(\d{4})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/);
+            if (parts) {
+                return new Date(parseInt(parts[1]), parseInt(parts[2]) - 1, parseInt(parts[3]));
+            }
+            
+            // 표준 Date 객체로 파싱 시도
+            const date = new Date(str);
+            return !isNaN(date.getTime()) ? date : null;
+        }
+
+        function formatDate(dateValue) {
+            if (!dateValue) return '';
+            
+            const date = parseDate(dateValue);
+            if (!date) return '';
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatNumber(value) {
+            if (!value) return '';
+            
+            const num = parseFloat(String(value).replace(/[^0-9.-]/g, ''));
+            if (isNaN(num)) return '';
+            
+            return num.toLocaleString('ko-KR');
+        }
+
+        // ========== UI 업데이트 ==========
+        function showNotice(type, message) {
+            const notice = document.getElementById('statusNotice');
+            notice.className = `notice notice-${type}`;
+            notice.innerHTML = message;
+            notice.style.display = 'block';
+        }
+
+        function hideNotice() {
+            const notice = document.getElementById('statusNotice');
+            notice.style.display = 'none';
+        }
+
+        function populateFilterOptions() {
+            // 사용처 옵션 업데이트
+            const usageFilter = document.getElementById('usageFilter');
+            const usages = [...new Set(allOfficeData.map(o => o.사용처).filter(u => u))].sort();
+            
+            while (usageFilter.options.length > 1) {
+                usageFilter.remove(1);
+            }
+            
+            usages.forEach(usage => {
+                const option = document.createElement('option');
+                option.value = usage;
+                option.textContent = usage;
+                usageFilter.appendChild(option);
+            });
+
+            // 지역 옵션 업데이트
+            const regionFilter = document.getElementById('regionFilter');
+            const regions = [...new Set(allOfficeData.map(o => o.지역).filter(r => r))].sort();
+            
+            while (regionFilter.options.length > 1) {
+                regionFilter.remove(1);
+            }
+            
+            regions.forEach(region => {
+                const option = document.createElement('option');
+                option.value = region;
+                option.textContent = region;
+                regionFilter.appendChild(option);
+            });
+        }
+
         function renderTable(data) {
             const tbody = document.getElementById('dataTableBody');
             tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #6c757d;">조건에 맞는 데이터가 없습니다.</td></tr>';
+                return;
+            }
 
             data.forEach(item => {
                 const row = document.createElement('tr');
                 
                 // 만료 임박 스타일
-                if (item.현황 === '사용중' && item.남은일수 <= 60) {
-                    row.style.backgroundColor = '#ffcdd2';
-                    row.style.fontWeight = '700';
-                } else if (item.현황 === '사용중' && item.남은일수 <= 180) {
-                    row.style.backgroundColor = '#ffe0b2';
+                if (item.현황 === '사용중' && item.남은일수 !== null) {
+                    if (item.남은일수 <= 60) {
+                        row.style.backgroundColor = '#ffcdd2';
+                        row.style.fontWeight = '700';
+                    } else if (item.남은일수 <= 180) {
+                        row.style.backgroundColor = '#ffe0b2';
+                        row.style.fontWeight = '600';
+                    }
                 }
 
                 const statusClass = item.현황 === '사용중' ? 'status-active-cell' : 'status-inactive-cell';
-                const daysText = item.남은일수 < 0 ? `만료 ${Math.abs(item.남은일수)}일 지남` : 
-                                item.남은일수 === 0 ? '오늘만료' : `${item.남은일수}일`;
+                
+                let daysText = '-';
+                if (item.남은일수 !== null) {
+                    if (item.남은일수 < 0) {
+                        daysText = `만료 ${Math.abs(item.남은일수)}일 지남`;
+                    } else if (item.남은일수 === 0) {
+                        daysText = '오늘만료';
+                    } else {
+                        daysText = `${item.남은일수}일`;
+                    }
+                }
 
                 row.innerHTML = `
-                    <td><span class="status-badge ${statusClass}">${item.현황}</span></td>
-                    <td>${item.사용처}</td>
-                    <td>${item.지역}</td>
-                    <td>${item.지점명}</td>
-                    <td>${item.계약일}</td>
-                    <td>${item.만료일}</td>
+                    <td><span class="status-badge ${statusClass}">${item.현황 || '-'}</span></td>
+                    <td>${item.사용처 || '-'}</td>
+                    <td>${item.지역 || '-'}</td>
+                    <td>${item.지점명 || '-'}</td>
+                    <td>${item.계약일 || '-'}</td>
+                    <td>${item.만료일 || '-'}</td>
                     <td>${daysText}</td>
-                    <td>${item.보증금}</td>
-                    <td>${item.월세}</td>
+                    <td>${item.보증금 || '-'}</td>
+                    <td>${item.월세 || '-'}</td>
                 `;
                 tbody.appendChild(row);
             });
         }
 
-        // 필터 적용
         function applyFilters() {
             const statusFilter = document.getElementById('statusFilter').value;
             const usageFilter = document.getElementById('usageFilter').value;
             const regionFilter = document.getElementById('regionFilter').value;
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
 
-            let filtered = testData.filter(item => {
+            let filtered = allOfficeData.filter(item => {
                 const statusMatch = statusFilter === '전체' || item.현황 === statusFilter;
                 const usageMatch = usageFilter === '전체' || item.사용처 === usageFilter;
                 const regionMatch = regionFilter === '전체' || item.지역 === regionFilter;
                 const searchMatch = !searchTerm || 
                     item.지점명.toLowerCase().includes(searchTerm) ||
-                    item.주소.toLowerCase().includes(searchTerm);
+                    (item.주소 && item.주소.toLowerCase().includes(searchTerm));
 
                 return statusMatch && usageMatch && regionMatch && searchMatch;
             });
@@ -551,27 +813,91 @@
             renderTable(filtered);
         }
 
-        // 이벤트 리스너
+        // ========== 설정 관련 함수 ==========
+        function testConnection() {
+            const url = document.getElementById('appsScriptUrl').value.trim();
+            if (!url) {
+                alert('Apps Script URL을 입력해주세요.');
+                return;
+            }
+            
+            showNotice('info', '<div class="loading-spinner"></div><strong>연결 테스트 중...</strong>');
+            connectAppsScript(url);
+        }
+
+        function saveAndConnect() {
+            const url = document.getElementById('appsScriptUrl').value.trim();
+            if (!url) {
+                alert('Apps Script URL을 입력해주세요.');
+                return;
+            }
+            
+            APPS_SCRIPT_URL = url;
+            localStorage.setItem('cfc-apps-script-url', url);
+            document.getElementById('configSection').style.display = 'none';
+            connectAppsScript(url);
+        }
+
+        function useTestData() {
+            document.getElementById('configSection').style.display = 'none';
+            loadTestData();
+        }
+
+        function loadTestData() {
+            const testData = [
+                {
+                    현황: '사용중', 사용처: 'CFC', 지역: '서울', 지점명: '강남점',
+                    주소: '서울시 강남구 테헤란로 123', 계약일: '2023-01-01', 만료일: '2024-12-31',
+                    보증금: '50,000,000', 월세: '3,000,000', 남은일수: 365
+                },
+                {
+                    현황: '사용중', 사용처: 'CFC', 지역: '서울', 지점명: '홍대점',
+                    주소: '서울시 마포구 홍익로 456', 계약일: '2023-06-01', 만료일: '2024-05-31',
+                    보증금: '30,000,000', 월세: '2,500,000', 남은일수: 180
+                },
+                {
+                    현황: '퇴거', 사용처: 'CFC', 지역: '부산', 지점명: '부산점',
+                    주소: '부산시 해운대구 해운대로 789', 계약일: '2022-01-01', 만료일: '2023-12-31',
+                    보증금: '40,000,000', 월세: '2,800,000', 남은일수: -30
+                },
+                {
+                    현황: '사용중', 사용처: 'CFC', 지역: '대구', 지점명: '대구점',
+                    주소: '대구시 중구 중앙대로 101', 계약일: '2023-03-01', 만료일: '2025-02-28',
+                    보증금: '35,000,000', 월세: '2,200,000', 남은일수: 500
+                },
+                {
+                    현황: '사용중', 사용처: 'CFC', 지역: '서울', 지점명: '임박점',
+                    주소: '서울시 송파구 올림픽로 202', 계약일: '2023-01-01', 만료일: '2025-01-15',
+                    보증금: '60,000,000', 월세: '4,000,000', 남은일수: 30
+                }
+            ];
+
+            allOfficeData = testData.map((item, index) => ({ ...item, id: `test_${index}` }));
+            populateFilterOptions();
+            applyFilters();
+            
+            showNotice('info', '📊 <strong>테스트 데이터:</strong> ' + testData.length + '개의 샘플 데이터를 로드했습니다.');
+            setTimeout(() => hideNotice(), 3000);
+        }
+
+        // ========== 이벤트 리스너 ==========
         document.getElementById('statusFilter').addEventListener('change', applyFilters);
         document.getElementById('usageFilter').addEventListener('change', applyFilters);
         document.getElementById('regionFilter').addEventListener('change', applyFilters);
         document.getElementById('searchInput').addEventListener('input', applyFilters);
 
-        // 초기화
+        // ========== 초기화 ==========
         function initializeApp() {
-            const notice = document.getElementById('statusNotice');
-            if (notice) {
-                notice.className = 'notice notice-success';
-                notice.innerHTML = '✅ <strong>PWA 앱 준비 완료!</strong> 테스트 데이터로 모든 기능을 확인해보세요.';
-                
-                setTimeout(() => {
-                    notice.style.display = 'none';
-                }, 5000);
+            console.log('🚀 CFC 현황판 앱 시작');
+            
+            // 저장된 URL 복원
+            const savedUrl = localStorage.getItem('cfc-apps-script-url');
+            if (savedUrl) {
+                APPS_SCRIPT_URL = savedUrl;
             }
-
-            renderTable(testData);
-            console.log('🎉 CFC 현황판 PWA가 성공적으로 로드되었습니다!');
-            console.log('📱 설치 아이콘이 나타날 때까지 잠시 기다려주세요.');
+            
+            // 데이터 연결 시도
+            connectAppsScript();
         }
 
         // 페이지 로드 완료 후 초기화
