@@ -4,13 +4,13 @@ const CACHE_NAME = 'cfc-dashboard-cache-v1';
 // 오프라인 상태일 때 표시하기 위해 캐싱할 파일 목록
 // index.html에서 사용하는 외부 라이브러리들을 포함합니다.
 const FILES_TO_CACHE = [
-  '/index.html',
-  '/',
+  '/cfc-dashboard/index.html',
+  '/cfc-dashboard/',
   'https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js',
-  'icons/icon-192.png',
-  'icons/icon-512.png'
+  '/cfc-dashboard/icons/icon-192.png',
+  '/cfc-dashboard/icons/icon-512.png'
 ];
 
 // 서비스 워커 설치 이벤트: FILES_TO_CACHE에 있는 모든 파일을 캐싱합니다.
