@@ -2256,12 +2256,12 @@ if (visibleColumns['지점명']) html += `<td>${o.지점명 || '-'}</td>`;
     <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/cfc-dashboard/service-worker.js')
+      navigator.serviceWorker.register('./service-worker.js', { scope: './' })
         .then(registration => {
-          console.log('서비스 워커가 성공적으로 등록되었습니다.', registration);
+          console.log('서비스 워커가 성공적으로 등록되었습니다. 적용 범위:', registration.scope);
         })
         .catch(error => {
-          console.log('서비스 워커 등록에 실패했습니다:', error);
+          console.log('서비스 워커 등록에 최종 실패했습니다:', error);
         });
     });
   }
