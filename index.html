@@ -17,12 +17,11 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: var(--main-bg);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 9999;
-    backdrop-filter: blur(5px);
     display: none; /* JS로 제어 */
 }
 
@@ -132,9 +131,12 @@
         }
 
         .app-container {
-            display: flex;
-            min-height: 100vh;
-        }
+    display: none; /* 기본적으로 숨김 */
+    min-height: 100vh;
+}
+.app-container.visible {
+    display: flex; /* 인증 후 이 클래스를 추가하여 보이게 함 */
+}
 
         /* ─────────── 사이드바 ─────────── */
         .sidebar {
@@ -1335,21 +1337,22 @@
 
             // 세션 스토리지에 인증 정보가 있는지 확인
             if (sessionStorage.getItem('is-authenticated') === 'true') {
-                // 이미 인증되었다면 아무것도 하지 않음
-                return;
-            } else {
-                // 인증되지 않았다면 인증 화면 표시
-                authOverlay.style.display = 'flex';
-                pinInput.focus();
-            }
+    // 이미 인증되었다면 인증 화면을 건너뛰고 바로 대시보드를 보여줌
+    document.querySelector('.app-container').classList.add('visible');
+    authOverlay.style.display = 'none';
+} else {
+    // 인증되지 않았다면 인증 화면 표시
+    authOverlay.style.display = 'flex';
+    pinInput.focus();
+}
 
             const checkPin = () => {
                 // 입력한 PIN이 유효한 PIN 목록에 포함되어 있는지 확인
                 if (VALID_PINS.includes(pinInput.value)) {
-                    // PIN이 맞으면 인증 정보를 저장하고 화면을 숨김
-                    sessionStorage.setItem('is-authenticated', 'true');
-                    authOverlay.style.display = 'none';
-                } else {
+    sessionStorage.setItem('is-authenticated', 'true');
+    authOverlay.style.display = 'none';
+    document.querySelector('.app-container').classList.add('visible'); // 메인 컨테이너를 보이게 함
+} else {
                     // PIN이 틀리면 에러 메시지 표시 및 입력창 초기화
                     errorMsg.textContent = '번호가 올바르지 않습니다.';
                     authContainer.classList.add('shake');
