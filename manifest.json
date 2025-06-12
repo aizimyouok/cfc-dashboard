@@ -2,7 +2,7 @@
   "name": "CFC 사무실 임대 현황 대시보드",
   "short_name": "CFC 임대 현황",
   "description": "CFC 사무실 임대 현황 대시보드",
-  "start_url": "/index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#f4f6f9",
   "theme_color": "#2c3e50",
